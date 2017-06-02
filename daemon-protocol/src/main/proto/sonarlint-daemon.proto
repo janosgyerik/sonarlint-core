@@ -38,6 +38,7 @@ service ConnectedSonarLint {
 
 service StandaloneSonarLint {
   rpc Analyze(AnalysisReq) returns (stream Issue);
+  rpc AnalyzeContent(AnalyzeContentRequest) returns (stream Issue);
   rpc StreamLogs(Void) returns (stream LogEvent); // stream all logs from the server
   rpc GetRuleDetails(RuleKey) returns (RuleDetails);
 }
@@ -129,6 +130,12 @@ message AnalysisReq {
   repeated InputFile file = 2;
   string base_dir = 3;
   string work_dir = 4;
+}
+
+message AnalyzeContentRequest {
+  string content = 1;
+  string language = 2;
+  string charset = 3;
 }
 
 message InputFile {

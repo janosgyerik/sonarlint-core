@@ -19,25 +19,34 @@
  */
 package org.sonarlint.daemon.services;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.sonarlint.daemon.Utils;
 import org.sonarlint.daemon.model.DefaultClientInputFile;
 import org.sonarlint.daemon.model.ProxyIssueListener;
 import org.sonarlint.daemon.model.ProxyLogOutput;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalysisReq;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.InputFile;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
@@ -54,6 +63,20 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   private final ProxyLogOutput logOutput;
   private final Collection<URL> analyzers;
   private StandaloneSonarLintEngine engine;
+
+  private final Path workDir;
+  {
+    try {
+      workDir = Files.createTempDirectory("SonarLintDaemon-");
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not create temporary work directory");
+    }
+  }
+
+  private final Map<String, String> extensions = new HashMap<>();
+  {
+    extensions.put("JavaScript", "js");
+  }
 
   public StandaloneSonarLintImpl(Collection<URL> analyzers) {
     this.analyzers = analyzers;
@@ -93,6 +116,36 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         Paths.get(requestConfig.getWorkDir()),
         files,
         requestConfig.getPropertiesMap());
+
+      engine.analyze(config, new ProxyIssueListener(response), logOutput);
+      response.onCompleted();
+    } catch (Exception e) {
+      LOGGER.error("Error analyzing", e);
+      response.onError(e);
+    }
+  }
+
+  @Override
+  public void analyzeContent(SonarlintDaemon.AnalyzeContentRequest request, StreamObserver<Issue> response) {
+    if (engine == null) {
+      response.onError(new IllegalStateException("Not registered"));
+      return;
+    }
+
+    try {
+      String ext = extensions.getOrDefault(request.getLanguage(), "tmp");
+      Path path = Files.createTempFile("SonarLintDaemon-content-", "." + ext);
+      try (PrintWriter out = new PrintWriter(path.toFile())) {
+        out.println(request.getContent());
+      }
+
+      DefaultClientInputFile inputFile = new DefaultClientInputFile(path, false, Charset.forName(request.getCharset()), "");
+
+      StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(
+              workDir,
+              workDir,
+              Collections.singleton(inputFile),
+              Collections.emptyMap());
 
       engine.analyze(config, new ProxyIssueListener(response), logOutput);
       response.onCompleted();

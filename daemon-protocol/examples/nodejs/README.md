@@ -23,11 +23,11 @@ Run:
 
     npm install
 
-## Run demo
+## Demo: analyze local file
 
 Run:
 
-    node demo.js
+    node demo-file.js
 
 This should print something like:
 
@@ -43,3 +43,9 @@ This should print something like:
       user_object: '' }
     status
     end of data
+
+## Demo: analyze content
+
+Run:
+
+    node demo-content.sh
