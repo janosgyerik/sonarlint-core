@@ -48,4 +48,4 @@ This should print something like:
 
 Run:
 
-    node demo-content.sh
+    node demo-content.js
