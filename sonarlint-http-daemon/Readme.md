@@ -1,7 +1,7 @@
 Steps to get it running:
 * git clone git@github.com:bartfastiel/sonarlint-core.git
 * cd sonarlint-core
-* git checkout ugly-poc-sonarlint-online
+* git checkout ugly-poc-sonarlint-online-httpservlet
 * mvn clean install
 * cd sonarlint-http-deamon
 * mvn jetty:run
