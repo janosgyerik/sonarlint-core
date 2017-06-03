@@ -47,6 +47,13 @@ public class AnalyzerServlet extends HttpServlet {
       resp.setStatus(400);
       return;
     }
+    
+    String language = req.getParameter("language");
+    if (language == null || language.isEmpty()) {
+      language = "JavaScript";
+      resp.getWriter().write("No language specified, defaulting to "+language);
+    }
+    
     System.out.println("content:");
     System.out.println(postBody);
 
@@ -57,6 +64,7 @@ public class AnalyzerServlet extends HttpServlet {
     build.setCharset("UTF-8");
 
     build.setContent(postBody);
+    build.setLanguage(language);
 
     try (PrintWriter writer = resp.getWriter()) {
       writer.write("starting Analysis\n");
