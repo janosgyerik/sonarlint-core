@@ -1,0 +1,33 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sonar at your fingertips</title>
+ <script>
+	function analyze() {
+		document.getElementById("resultTitle").style.display = "block";
+		   document.getElementById("result").innerHTML = "sending request...";
+		var url = "http://localhost:8080/analyze";
+		var method = "POST";
+		var async = true;
+		var request = new XMLHttpRequest();
+		request.onload = function () {
+		   document.getElementById("result").innerHTML = request.responseText;
+		}
+		request.open(method, url, async);
+		request.setRequestHeader("Content-Type", "plain/text;charset=UTF-8");
+		request.send(document.getElementById("input").value);
+		document.getElementById("result").innerHTML = "request sent, waiting for response...";
+	}
+</script>
+</head>
+
+<body>
+  <h2>Paste your code here:</h2>
+  <textarea id="input" rows="4" cols="50"></textarea><br/>
+  <button onclick="analyze()">Analyse code now!</button>
+  <h2 id="resultTitle" style="display:none">Result:</h2>
+  <div id="result" style="white-space:pre"></div>
+</body>
+</html>
