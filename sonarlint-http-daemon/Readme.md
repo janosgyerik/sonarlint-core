@@ -3,7 +3,7 @@ Steps to get it running:
 * cd sonarlint-core
 * git checkout ugly-poc-sonarlint-online-httpservlet
 * mvn clean install
-* cd sonarlint-http-deamon
+* cd sonarlint-http-daemon
 * cd plugins/
 * wget https://sonarsource.bintray.com/Distribution/sonar-javascript-plugin/sonar-javascript-plugin-3.0.0.4962.jar
 * cd ..
