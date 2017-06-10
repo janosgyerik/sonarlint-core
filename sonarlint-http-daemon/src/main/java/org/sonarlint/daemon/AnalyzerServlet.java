@@ -20,22 +20,33 @@
 package org.sonarlint.daemon;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import org.sonar.api.utils.text.JsonWriter;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
+import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalyzeContentRequest;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.AnalyzeContentRequest.Builder;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 
 import io.grpc.stub.StreamObserver;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 
 public class AnalyzerServlet extends HttpServlet {
 
@@ -47,48 +58,134 @@ public class AnalyzerServlet extends HttpServlet {
       resp.setStatus(400);
       return;
     }
-    
-    String language = req.getParameter("language");
-    if (language == null || language.isEmpty()) {
-      language = "JavaScript";
-      resp.getWriter().write("No language specified, defaulting to "+language);
+
+    try (ServletOutputStream outputStream = resp.getOutputStream();
+         OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8);
+         JsonWriter json = JsonWriter.of(writer)) {
+      json.beginObject();
+      json.name("log");
+      json.beginArray();
+
+      String language = req.getParameter("language");
+      if (language == null || language.isEmpty()) {
+        language = "JavaScript";
+        json.value("No language specified, defaulting to " + language);
+      }
+
+      Path sonarlintHome = Paths.get(".");
+      StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome));
+
+      List<Issue> issues = getIssues(json, sonarlint, postBody, language);
+      List<SonarlintDaemon.RuleDetails> rules = getRules(json, sonarlint, issues);
+
+      json.endArray();
+      writeIssues(rules, issues, json);
+      json.endObject();
     }
-    
-    System.out.println("content:");
-    System.out.println(postBody);
+    resp.setStatus(200);
+  }
 
-    Path sonarlintHome = Paths.get(".");
+  private List<SonarlintDaemon.RuleDetails> getRules(final JsonWriter json, StandaloneSonarLintImpl sonarlint, List<Issue> issues) {
+    json.value("loading rules");
+    List<SonarlintDaemon.RuleDetails> rules = new ArrayList<>();
+    Set<String> ruleKeys = issues.stream().map(Issue::getRuleKey).collect(Collectors.toSet());
+    for (String ruleKey : ruleKeys) {
+      json.value("loading rule " + ruleKey);
+      SonarlintDaemon.RuleKey ruleKeyParsed = SonarlintDaemon.RuleKey.newBuilder().setKey(ruleKey).build();
+      sonarlint.getRuleDetails(ruleKeyParsed, new StreamObserver<SonarlintDaemon.RuleDetails>() {
+        @Override
+        public void onNext(SonarlintDaemon.RuleDetails ruleDetails) {
+          rules.add(ruleDetails);
+          json.value("onNext " + ruleDetails);
+        }
 
-    StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome));
+        @Override
+        public void onError(Throwable throwable) {
+          json.value("onError");
+        }
+
+        @Override
+        public void onCompleted() {
+          json.value("onCompleted");
+        }
+      });
+    }
+    return rules;
+  }
+
+  private List<Issue> getIssues(final JsonWriter json, StandaloneSonarLintImpl sonarlint, String postBody, String language) {
     Builder build = AnalyzeContentRequest.newBuilder();
     build.setCharset("UTF-8");
 
     build.setContent(postBody);
     build.setLanguage(language);
 
-    try (PrintWriter writer = resp.getWriter()) {
-      writer.write("starting Analysis\n");
-      sonarlint.analyzeContent(build.build(), new StreamObserver<Issue>() {
+    List<Issue> issues = new ArrayList<>();
+    json.value("starting analysis");
+    sonarlint.analyzeContent(build.build(), new StreamObserver<Issue>() {
 
-        @Override
-        public void onCompleted() {
-          writer.write("onCompleted\n");
-        }
+      @Override
+      public void onCompleted() {
+        json.value("onCompleted");
+      }
 
-        @Override
-        public void onError(Throwable arg0) {
-          arg0.printStackTrace();
-          writer.write("onError\n");
-        }
+      @Override
+      public void onError(Throwable arg0) {
+        json.value("onError");
+      }
 
-        @Override
-        public void onNext(Issue arg0) {
-          writer.write("onNext " + arg0 + "\n");
-        }
-      });
+      @Override
+      public void onNext(Issue arg0) {
+        issues.add(arg0);
+        json.value("onNext " + arg0);
+      }
+    });
+    json.value("analysis done");
+    return issues;
+  }
 
-      writer.write("Analysis done");
+  private void writeIssues(List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
+    json.prop("total", issues.size());
+    json.prop("p", 1);
+    json.prop("ps", issues.size());
+
+    json.name("paging")
+            .beginObject()
+            .prop("pageIndex", 1)
+            .prop("pageSize", issues.size())
+            .prop("total", issues.size())
+            .endObject();
+
+    json.name("issues");
+    json.beginArray();
+    for (Issue issue : issues) {
+      json.beginObject();
+      json.prop("rule", issue.getRuleKey());
+      json.prop("severity", issue.getSeverity().name());
+      json.prop("message", issue.getMessage());
+
+      json.name("textRange")
+              .beginObject()
+              .prop("startLine", issue.getStartLine())
+              .prop("endLine", issue.getEndLine())
+              .prop("startOffset", issue.getStartLineOffset())
+              .prop("endOffset", issue.getEndLineOffset())
+              .endObject();
+
+      json.endObject();
     }
-    resp.setStatus(200);
+    json.endArray();
+
+    json.name("rules");
+    json.beginArray();
+    for (SonarlintDaemon.RuleDetails rule : rules) {
+      json.beginObject();
+      json.prop("key", rule.getKey());
+      json.prop("name", rule.getName());
+      json.prop("lang", rule.getLanguage());
+      json.prop("langName", rule.getLanguage());
+      json.endObject();
+    }
+    json.endArray();
   }
 }
