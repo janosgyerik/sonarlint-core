@@ -19,7 +19,16 @@
 		    document.getElementById("result").innerHTML = "";
             for (var i in response.issues) {
                 var issue = response.issues[i];
-                document.getElementById("result").innerHTML += '<div style="border: 1px solid #dd4040; background-color: #ffeaea; margin: 5px 5px 0 5px; padding: 8px 10px; font-size: 13px; font-weight: 600">'+issue.message+'</div>';
+                var border = '';
+                if (i == 0) {
+                  border = 'border: 1px solid #dd4040; ';
+                }
+                document.getElementById("result").innerHTML +=
+                '<div style="' + border + 'background-color: #ffeaea; margin: 5px 5px 0 5px; padding: 8px 10px; font-size: 13px; font-weight: 600; height: 41px">'
+                + issue.message
+                + '<div style="background: rgba(75,159,213,.3); color: #4b9fd5; height: 7px; width: 11px; padding: 3px 4px 3px 3px; line-height: 1px; display: inline-block;margin: 0 4px 8px 4px;position: relative;top: -3px;font-size: 15px">...</div>'
+                + '</div>'
+                ;
             }
 		}
 		request.open(method, url, async);
@@ -30,6 +39,7 @@
     </script>
     <style type="text/css">
 @import url(https://fonts.googleapis.com/css?family=Roboto:300,400,500,700);
+@font-face{font-family:sonar;src:url("https://sonarcloud.io/fonts/sonar-5.2.eot?");src:url("https://sonarcloud.io/fonts/sonar-5.2.eot?#iefix") format("embedded-opentype"),url("https://sonarcloud.io/fonts/sonar-5.2.woff?") format("woff"),url("https://sonarcloud.io/fonts/sonar-5.2.ttf?") format("truetype"),url("https://sonarcloud.io/fonts/sonar-5.2.svg?#sonar") format("svg");font-weight:400;font-style:normal}
     </style>
 </head>
 
@@ -40,13 +50,13 @@
 <div id="inputArea" style="float:left">
     <h2 style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 30px;">Analyze your
         code</h2>
-    <textarea style="border: none; margin: 10px 0px 0px 30px; padding: 4px" id="input" rows="20" cols="80">arr = [1, 2, 3];
+    <textarea style="border: none; margin: 10px 0px 0px 30px; padding: 10px" id="input" rows="20" cols="80">arr = [1, 2, 3];
 for (var x in arr) {
 	console.log(x);
 }</textarea>
     <br/>
     <select id="language"
-            style="margin: 14px 0px 0px 257px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
+            style="margin: 14px 0px 0px 269px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
         <option value="JavaScript">JavaScript</option>
         <option value="PHP">PHP</option>
         <option value="Java">Java (limited)</option>
@@ -60,7 +70,7 @@ for (var x in arr) {
     <h2 id="resultTitle"
         style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 30px">The
         results</h2>
-    <div id="result" style="margin: 10px 0 0 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black"></div>
+    <div id="result" style="margin: 10px 0 0 30px; padding: 10px 10px 15px 10px; background: #fff; color: black"></div>
 </div>
 </body>
 </html>
