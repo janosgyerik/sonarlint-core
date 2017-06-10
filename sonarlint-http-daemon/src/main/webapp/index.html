@@ -2,9 +2,9 @@
 
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Sonar at your fingertips</title>
- <script>
+    <meta charset="utf-8">
+    <title>Sonar at your fingertips</title>
+    <script>
 	function analyze() {
 		document.getElementById("resultTitle").style.display = "block";
     document.getElementById("result").style.display = "block";
@@ -21,29 +21,41 @@
 		request.send(document.getElementById("input").value);
 		document.getElementById("result").innerHTML = "request sent, waiting for response...";
 	}
-</script>
-<style type="text/css">
+    </script>
+    <style type="text/css">
 @import url(https://fonts.googleapis.com/css?family=Roboto:300,400,500,700);
-</style>
+    </style>
 </head>
 
 <body style="margin: 0; font-family:Helvetica Neue,Segoe UI,Helvetica,Arial,sans-serif;background-color: #4b9fd5; color: white">
-    <h1 style="position: fixed; top:0; left: 0; right: 0;	height: 25px; background-color: #262626; margin: 0; font-size: 16px; padding: 5px 0 0 10px;font-weight:normal">
-      <em style="font-weight: bold;font-style:normal">sonar</em>instant
-    </h1>
-  <h2 style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 7px;">Analyze your code</h2>
-  <textarea style="border: none; margin: 10px 0px 0px 7px; padding: 4px" id="input" rows="20" cols="80">arr = [1, 2, 3];
+<h1 style="position: fixed; top:0; left: 0; right: 0;	height: 25px; background-color: #262626; margin: 0; font-size: 16px; padding: 5px 0 0 10px;font-weight:normal">
+    <em style="font-weight: bold;font-style:normal">sonar</em>instant
+</h1>
+<div id="inputArea" style="float:left">
+    <h2 style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 7px;">Analyze your
+        code</h2>
+    <textarea style="border: none; margin: 10px 0px 0px 7px; padding: 4px" id="input" rows="20" cols="80">arr = [1, 2, 3];
 for (var x in arr) {
 	console.log(x);
 }</textarea>
-<br/>
-<select id="language" style="margin: 14px 0px 0px 234px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
-  <option value="JavaScript">JavaScript</option>
-  <option value="PHP">PHP</option>
-  <option value="Java">Java (limited)</option>
-</select>
-  <button onclick="analyze()"  style="margin: 14px 0px 0px 7px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">Analyse now!</button>
-  <h2 id="resultTitle" style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 35px 0 0 7px; display: none">The results</h2>
-  <textarea style="border: none; margin: 10px 0px 0px 7px; padding: 4px; white-space:pre; display: none" id="result" rows="20" cols="80"></textarea>
+    <br/>
+    <select id="language"
+            style="margin: 14px 0px 0px 234px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
+        <option value="JavaScript">JavaScript</option>
+        <option value="PHP">PHP</option>
+        <option value="Java">Java (limited)</option>
+    </select>
+    <button onclick="analyze()"
+            style="margin: 14px 0px 0px 7px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
+        Analyse now!
+    </button>
+</div>
+<div id="outputArea" style="float:left">
+    <h2 id="resultTitle"
+        style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 7px; display: none">The
+        results</h2>
+    <textarea style="border: none; margin: 10px 0px 0px 7px; padding: 4px; white-space:pre; display: none" id="result"
+              rows="20" cols="80"></textarea>
+</div>
 </body>
 </html>
