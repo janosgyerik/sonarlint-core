@@ -35,7 +35,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.sonar.api.utils.text.JsonWriter;
 import org.sonarlint.daemon.services.StandaloneSonarLintImpl;
 import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon;
@@ -46,7 +45,6 @@ import org.sonarsource.sonarlint.daemon.proto.SonarlintDaemon.Issue;
 import io.grpc.stub.StreamObserver;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.asList;
 
 public class AnalyzerServlet extends HttpServlet {
 
