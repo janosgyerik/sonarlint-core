@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -143,7 +144,7 @@ public class AnalyzerServlet extends HttpServlet {
 
   private void writeResponse(List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
     writePagination(issues, json);
-    writeResponse(issues, json);
+    writeIssues(issues, rules, json);
     writeRules(rules, json);
   }
 
@@ -173,7 +174,7 @@ public class AnalyzerServlet extends HttpServlet {
     json.endArray();
   }
 
-  private void writeResponse(List<Issue> issues, JsonWriter json) {
+  private void writeIssues(List<Issue> issues, List<SonarlintDaemon.RuleDetails> rules, JsonWriter json) {
     json.name("issues");
     json.beginArray();
     for (Issue issue : issues) {
@@ -181,6 +182,9 @@ public class AnalyzerServlet extends HttpServlet {
       json.prop("rule", issue.getRuleKey());
       json.prop("severity", issue.getSeverity().name());
       json.prop("message", issue.getMessage());
+      SonarlintDaemon.RuleDetails rule = rules.stream().filter(r -> r.getKey().equals(issue.getRuleKey())).findFirst()
+              .orElseThrow(() -> new RuntimeException("Cannot find rule "+issue.getRuleKey()));
+      json.prop("type", rule.getType());
 
       json.name("textRange")
               .beginObject()

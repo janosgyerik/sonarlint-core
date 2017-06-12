@@ -123,6 +123,7 @@ message RuleDetails {
   string language = 4;
   string severity = 5;
   repeated string tags = 6;
+  string type = 7;
 }
 
 message AnalysisReq {

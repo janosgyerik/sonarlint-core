@@ -164,6 +164,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   public void getRuleDetails(RuleKey key, StreamObserver<RuleDetails> response) {
     try {
       org.sonarsource.sonarlint.core.client.api.common.RuleDetails ruleDetails = engine.getRuleDetails(key.getKey());
+
       response.onNext(RuleDetails.newBuilder()
         .setKey(ruleDetails.getKey())
         .setName(ruleDetails.getName())
@@ -171,6 +172,7 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
         .setSeverity(ruleDetails.getSeverity())
         .setHtmlDescription(ruleDetails.getHtmlDescription())
         .addAllTags(Arrays.asList(ruleDetails.getTags()))
+        .setType(ruleDetails.getType())
         .build());
       response.onCompleted();
     } catch (Exception e) {
