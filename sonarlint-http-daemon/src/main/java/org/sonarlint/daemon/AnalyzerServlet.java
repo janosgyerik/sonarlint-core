@@ -23,10 +23,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
@@ -77,7 +75,7 @@ public class AnalyzerServlet extends HttpServlet {
       List<SonarlintDaemon.RuleDetails> rules = getRules(json, sonarlint, issues);
 
       json.endArray();
-      writeResponse(rules, issues, json);
+      writeResponse(postBody, rules, issues, json);
       json.endObject();
     }
     resp.setStatus(200);
@@ -142,10 +140,24 @@ public class AnalyzerServlet extends HttpServlet {
     return rules;
   }
 
-  private void writeResponse(List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
+  private void writeResponse(String content, List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
+    writeLines(content, json);
     writePagination(issues, json);
     writeIssues(issues, rules, json);
     writeRules(rules, json);
+  }
+
+  private void writeLines(String content, JsonWriter json) {
+    json.name("lines");
+    json.beginArray();
+    AtomicInteger i = new AtomicInteger();
+    Arrays.stream(content.split("\n")).forEach(line -> {
+      json.beginObject();
+      json.prop("line", i.getAndIncrement());
+      json.prop("code", line);
+      json.endObject();
+    });
+    json.endArray();
   }
 
   private void writePagination(List<Issue> issues, JsonWriter json) {
