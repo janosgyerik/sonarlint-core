@@ -6,15 +6,21 @@
     <title>Sonar at your fingertips</title>
     <style type="text/css">
         .issue {
-            background-color: #ffeaea;
+            background-color: #fff;
+            border: 1px solid #e6e6e6;
             margin: 5px 5px 0 5px;
             padding: 8px 10px;
             font-size: 13px;
             font-weight: 600;
-            height: 41px
+            height: 41px;
+            transition: background-color .3s ease,border-color .3s ease;
         }
         .issue:first-of-type {
             border: 1px solid #dd4040;
+            background-color: #ffeaea;
+        }
+        .issue:hover {
+            background-color: #ffeaea;
         }
         .issueDotDotDot {
             background: rgba(75,159,213,.3);
@@ -92,7 +98,7 @@ for (var x in arr) {
     <h2 id="resultTitle"
         style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 30px">The
         results</h2>
-    <div id="result" style="margin: 10px 0 0 30px; padding: 10px 10px 15px 10px; background: #fff; color: black"></div>
+    <div id="result" style="margin: 10px 0 0 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black"></div>
 </div>
 </body>
 </html>
