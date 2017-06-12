@@ -21,7 +21,6 @@ package org.sonarlint.daemon;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -77,38 +76,10 @@ public class AnalyzerServlet extends HttpServlet {
       List<SonarlintDaemon.RuleDetails> rules = getRules(json, sonarlint, issues);
 
       json.endArray();
-      writeIssues(rules, issues, json);
+      writeResponse(rules, issues, json);
       json.endObject();
     }
     resp.setStatus(200);
-  }
-
-  private List<SonarlintDaemon.RuleDetails> getRules(final JsonWriter json, StandaloneSonarLintImpl sonarlint, List<Issue> issues) {
-    json.value("loading rules");
-    List<SonarlintDaemon.RuleDetails> rules = new ArrayList<>();
-    Set<String> ruleKeys = issues.stream().map(Issue::getRuleKey).collect(Collectors.toSet());
-    for (String ruleKey : ruleKeys) {
-      json.value("loading rule " + ruleKey);
-      SonarlintDaemon.RuleKey ruleKeyParsed = SonarlintDaemon.RuleKey.newBuilder().setKey(ruleKey).build();
-      sonarlint.getRuleDetails(ruleKeyParsed, new StreamObserver<SonarlintDaemon.RuleDetails>() {
-        @Override
-        public void onNext(SonarlintDaemon.RuleDetails ruleDetails) {
-          rules.add(ruleDetails);
-          json.value("onNext " + ruleDetails);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-          json.value("onError");
-        }
-
-        @Override
-        public void onCompleted() {
-          json.value("onCompleted");
-        }
-      });
-    }
-    return rules;
   }
 
   private List<Issue> getIssues(final JsonWriter json, StandaloneSonarLintImpl sonarlint, String postBody, String language) {
@@ -142,18 +113,67 @@ public class AnalyzerServlet extends HttpServlet {
     return issues;
   }
 
-  private void writeIssues(List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
+  private List<SonarlintDaemon.RuleDetails> getRules(final JsonWriter json, StandaloneSonarLintImpl sonarlint, List<Issue> issues) {
+    json.value("loading rules");
+    List<SonarlintDaemon.RuleDetails> rules = new ArrayList<>();
+    Set<String> ruleKeys = issues.stream().map(Issue::getRuleKey).collect(Collectors.toSet());
+    for (String ruleKey : ruleKeys) {
+      json.value("loading rule " + ruleKey);
+      SonarlintDaemon.RuleKey ruleKeyParsed = SonarlintDaemon.RuleKey.newBuilder().setKey(ruleKey).build();
+      sonarlint.getRuleDetails(ruleKeyParsed, new StreamObserver<SonarlintDaemon.RuleDetails>() {
+        @Override
+        public void onNext(SonarlintDaemon.RuleDetails ruleDetails) {
+          rules.add(ruleDetails);
+          json.value("onNext " + ruleDetails);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+          json.value("onError");
+        }
+
+        @Override
+        public void onCompleted() {
+          json.value("onCompleted");
+        }
+      });
+    }
+    return rules;
+  }
+
+  private void writeResponse(List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
+    writePagination(issues, json);
+    writeResponse(issues, json);
+    writeRules(rules, json);
+  }
+
+  private void writePagination(List<Issue> issues, JsonWriter json) {
     json.prop("total", issues.size());
     json.prop("p", 1);
     json.prop("ps", issues.size());
-
     json.name("paging")
             .beginObject()
             .prop("pageIndex", 1)
             .prop("pageSize", issues.size())
             .prop("total", issues.size())
             .endObject();
+  }
 
+  private void writeRules(List<SonarlintDaemon.RuleDetails> rules, JsonWriter json) {
+    json.name("rules");
+    json.beginArray();
+    for (SonarlintDaemon.RuleDetails rule : rules) {
+      json.beginObject();
+      json.prop("key", rule.getKey());
+      json.prop("name", rule.getName());
+      json.prop("lang", rule.getLanguage());
+      json.prop("langName", rule.getLanguage());
+      json.endObject();
+    }
+    json.endArray();
+  }
+
+  private void writeResponse(List<Issue> issues, JsonWriter json) {
     json.name("issues");
     json.beginArray();
     for (Issue issue : issues) {
@@ -170,18 +190,6 @@ public class AnalyzerServlet extends HttpServlet {
               .prop("endOffset", issue.getEndLineOffset())
               .endObject();
 
-      json.endObject();
-    }
-    json.endArray();
-
-    json.name("rules");
-    json.beginArray();
-    for (SonarlintDaemon.RuleDetails rule : rules) {
-      json.beginObject();
-      json.prop("key", rule.getKey());
-      json.prop("name", rule.getName());
-      json.prop("lang", rule.getLanguage());
-      json.prop("langName", rule.getLanguage());
       json.endObject();
     }
     json.endArray();
