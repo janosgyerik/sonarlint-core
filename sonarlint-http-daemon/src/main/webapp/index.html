@@ -55,11 +55,18 @@
         select::-ms-expand {
             display: none; /* remove default arrow in IE 10 and 11 */
         }
+
+        .source-line-code-issue {
+            display: inline-block;
+            background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAGCAYAAAAPDoR2AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo1M0M2Rjk4M0M3QUYxMUUzODkzRUREMUM5OTNDMjY4QSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo1M0M2Rjk4NEM3QUYxMUUzODkzRUREMUM5OTNDMjY4QSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjUzQzZGOTgxQzdBRjExRTM4OTNFREQxQzk5M0MyNjhBIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjUzQzZGOTgyQzdBRjExRTM4OTNFREQxQzk5M0MyNjhBIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+bcqJtQAAAEhJREFUeNpi+G+swwDGDAwgbAWlwZiJAQFCgfgwEIfDRaC67ID4NRDnQ2kQnwFZwgFqnANMAQOUYY9sF0wBiCGH5CBkrAgQYACuWi4sSGW8yAAAAABJRU5ErkJggg==);
+            background-repeat: repeat-x;
+            background-size: 4px;
+            background-position: bottom;
+        }
     </style>
     <script>
 	function analyze() {
-        document.getElementById("outputArea").style.display = "block";
-		   document.getElementById("result").innerHTML = "sending request...";
+		document.getElementById("result").style.opacity = 0.5;
 		var url = "http://localhost:8080/analyze?language="+document.getElementById("language").value;
 		var method = "POST";
 		var async = true;
@@ -77,12 +84,13 @@
                 + '<div class="issueDotDotDot">...</div>'
                 + '</div>'
                 ;
+                		document.getElementById("result").style.opacity = 1;
             }
 		}
 		request.open(method, url, async);
 		request.setRequestHeader("Content-Type", "plain/text;charset=UTF-8");
-		request.send(document.getElementById("input").value);
-		document.getElementById("result").innerHTML = "request sent, waiting for response...";
+		request.send(document.getElementById("input").textContent);
+		document.getElementById("result").style.opacity = 0.7;
 	}
     </script>
     <style type="text/css">
@@ -91,49 +99,40 @@
     </style>
 </head>
 
-<body style="margin: 0; font-family:Helvetica Neue,Segoe UI,Helvetica,Arial,sans-serif;background-color: #4b9fd5; color: white">
+<body style="margin: 0; font-family:Helvetica Neue,Segoe UI,Helvetica,Arial,sans-serif;background-color: #4b9fd5; color: white" onload="analyze()">
 <h1 style="position: fixed; top:0; left: 0; right: 0;	height: 25px; background-color: #262626; margin: 0; font-size: 16px; padding: 5px 0 0 10px;font-weight:normal">
     <em style="font-weight: bold;font-style:normal">sonar</em>instant
 </h1>
-<div id="inputArea" style="float:left" onkeypress="document.getElementById('outputArea').style.display='none'">
     <h2 style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 30px;">Analyze your
+        <select id="language"
+                style="margin: 0px 0px 0px 0px; position: relative; top: -6px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
+            <option value="ABAP">ABAP</option><!-- abap -->
+            <option value="C">C</option><!-- c -->
+            <option value="C#">C#</option><!-- cs -->
+            <option value="C++ (limited)">C++ (limited)</option><!-- cpp -->
+            <option value="COBOL">COBOL</option><!-- cobol -->
+            <option value="Flex">Flex</option><!-- flex -->
+            <option value="Java (limited)">Java (limited)</option><!-- java -->
+            <option value="JavaScript" selected="selected">JavaScript</option><!-- js -->
+            <option value="Objective-C">Objective-C</option><!-- objc -->
+            <option value="PHP">PHP</option><!-- php -->
+            <option value="PL/I">PL/I</option><!-- pli -->
+            <option value="PL/SQL">PL/SQL</option><!-- plsql -->
+            <option value="Python">Python</option><!-- py -->
+            <option value="RPG">RPG</option><!-- rpg -->
+            <option value="Swift">Swift</option><!-- swift -->
+            <option value="Visual Basic .NET">Visual Basic .NET</option><!-- vbnet -->
+            <option value="Web">Web</option><!-- web -->
+            <option value="XML">XML</option><!-- xml -->
+        </select>
         code</h2>
-    <textarea style="border: none; margin: 10px 0px 0px 30px; padding: 10px" id="input" rows="20" cols="80">arr = [1, 2, 3];
-for (var x in arr) {
-	console.log(x);
-}</textarea>
-    <br/>
-    <select id="language"
-            style="margin: 14px 0px 0px 269px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
-        <option value="ABAP">ABAP</option><!-- abap -->
-        <option value="C">C</option><!-- c -->
-        <option value="C#">C#</option><!-- cs -->
-        <option value="C++ (limited)">C++ (limited)</option><!-- cpp -->
-        <option value="COBOL">COBOL</option><!-- cobol -->
-        <option value="Flex">Flex</option><!-- flex -->
-        <option value="Java (limited)">Java (limited)</option><!-- java -->
-        <option value="JavaScript" selected="selected">JavaScript</option><!-- js -->
-        <option value="Objective-C">Objective-C</option><!-- objc -->
-        <option value="PHP">PHP</option><!-- php -->
-        <option value="PL/I">PL/I</option><!-- pli -->
-        <option value="PL/SQL">PL/SQL</option><!-- plsql -->
-        <option value="Python">Python</option><!-- py -->
-        <option value="RPG">RPG</option><!-- rpg -->
-        <option value="Swift">Swift</option><!-- swift -->
-        <option value="Visual Basic .NET">Visual Basic .NET</option><!-- vbnet -->
-        <option value="Web">Web</option><!-- web -->
-        <option value="XML">XML</option><!-- xml -->
-    </select>
-    <button onclick="analyze()"
-            style="margin: 14px 0px 0px 7px; border: solid 1px #91d315; background-color: #91d315; color: #225463; height: 44px; width: 170px; text-transform: uppercase; font-family: Roboto,sans-serif; text-align: center; font-weight: 500; font-size: 16px">
-        Analyse now!
-    </button>
-</div>
-<div id="outputArea" style="float:left; display: none">
-    <h2 id="resultTitle"
-        style="font-size:44px; font-family:Roboto,sans-serif;font-weight: 300;margin: 45px 0 0 30px">The
-        results</h2>
-    <div id="result" style="margin: 10px 0 0 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black"></div>
+<div id="content">
+        <div id="result" style="margin: 0 0 0 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black; width: 350px; float: left; overflow: auto; transition: opacity 0.3s;"></div>
+        <div contenteditable="true" id="input" oninput="analyze()" style="background: white; color: black; font-family: monospace; padding: 10px; margin: 20px 30px 0px 420px;">
+<span class="source-line-code-issue">arr</span> = [1, 2, 3];<br>
+for (var x in arr) {<br>
+&nbsp;&nbsp;console.log(x);<br>
+}</div>
 </div>
 </body>
 </html>
