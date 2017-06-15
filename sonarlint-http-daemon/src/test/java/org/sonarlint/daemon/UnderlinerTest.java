@@ -44,10 +44,10 @@ public class UnderlinerTest {
   }
 
   @Test
-  public void should_underline_issue() {
+  public void should_underline_line() {
     assertPieces(
             "bla",
-            singletonList(SonarlintDaemon.Issue.newBuilder().setStartLine(1).setEndLine(1).build()),
+            singletonList(SonarlintDaemon.Issue.newBuilder().setStartLine(1).setStartLineOffset(1).setEndLineOffset(3).setEndLine(1).build()),
             new CodePiece(PieceType.LINE_START),
             new CodePiece(PieceType.UNDERLINE_START),
             new CodePiece(PieceType.TEXT).setText("bla"),
@@ -55,7 +55,21 @@ public class UnderlinerTest {
             new CodePiece(PieceType.LINE_END));
   }
 
+  @Test
+  public void should_underline_carret() {
+    assertPieces(
+            "bla",
+            singletonList(SonarlintDaemon.Issue.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLineOffset(2).setEndLine(1).build()),
+            new CodePiece(PieceType.LINE_START),
+            new CodePiece(PieceType.TEXT).setText("b"),
+            new CodePiece(PieceType.UNDERLINE_START),
+            new CodePiece(PieceType.TEXT).setText("l"),
+            new CodePiece(PieceType.UNDERLINE_END),
+            new CodePiece(PieceType.TEXT).setText("a"),
+            new CodePiece(PieceType.LINE_END));
+  }
+
   private void assertPieces(String content, List<SonarlintDaemon.Issue> issues, CodePiece... expected) {
-    Assert.assertEquals(new Underliner(content).underline(issues), Arrays.asList(expected));
+    Assert.assertEquals(Arrays.asList(expected), new Underliner(content).underline(issues));
   }
 }

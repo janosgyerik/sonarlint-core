@@ -45,11 +45,38 @@ public class Underliner {
           linesToSkip--;
         }
       }
-      pieces.add(pieceIndex, new CodePiece(PieceType.UNDERLINE_START));
-      while (pieceIndex < pieces.size() && pieces.get(pieceIndex).getType() != PieceType.LINE_START) {
+      int startLineOffset = issue.getStartLineOffset();
+      int carretPosition = 1;
+      for (; carretPosition < startLineOffset; ) {
+        while (pieces.get(pieceIndex).getType() != PieceType.TEXT) {
+          pieceIndex++;
+        }
+        if (startLineOffset < carretPosition + pieces.get(pieceIndex).getText().length()) {
+          pieces.addAll(pieceIndex, pieces.remove(pieceIndex).splitAt(startLineOffset - carretPosition));
+        } else {
+          break;
+        }
+        carretPosition += pieces.get(pieceIndex).getText().length();
         pieceIndex++;
       }
-      pieces.add(pieceIndex-1, new CodePiece(PieceType.UNDERLINE_END));
+      pieces.add(pieceIndex, new CodePiece(PieceType.UNDERLINE_START));
+      pieceIndex++;
+
+      int endLineOffset = issue.getEndLineOffset();
+      for (; carretPosition <= endLineOffset; ) {
+        while (pieces.get(pieceIndex).getType() != PieceType.TEXT) {
+          pieceIndex++;
+        }
+        if (endLineOffset <= carretPosition + pieces.get(pieceIndex).getText().length()) {
+          pieces.addAll(pieceIndex, pieces.remove(pieceIndex).splitAt(endLineOffset+1 - carretPosition));
+        } else {
+          pieceIndex++;
+          break;
+        }
+        carretPosition += pieces.get(pieceIndex).getText().length();
+        pieceIndex++;
+      }
+      pieces.add(pieceIndex, new CodePiece(PieceType.UNDERLINE_END));
     });
     return pieces;
   }

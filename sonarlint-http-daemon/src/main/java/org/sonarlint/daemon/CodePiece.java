@@ -19,6 +19,12 @@
  */
 package org.sonarlint.daemon;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import static java.util.Arrays.asList;
+
 public class CodePiece {
   private final PieceType type;
   private String text;
@@ -64,5 +70,15 @@ public class CodePiece {
             type +
             (text == null ? "" : ", text='" + text + '\'') +
             '}';
+  }
+
+  public List<CodePiece> splitAt(int i) {
+    if (i == text.length()) {
+      return Collections.singletonList(this);
+    }
+    return asList(
+            new CodePiece(PieceType.TEXT).setText(text.substring(0,i)),
+            new CodePiece(PieceType.TEXT).setText(text.substring(i))
+    );
   }
 }
