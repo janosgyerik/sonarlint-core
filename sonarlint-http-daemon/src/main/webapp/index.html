@@ -85,8 +85,20 @@
                 + '<div class="issueDotDotDot">...</div>'
                 + '</div>'
                 ;
-                		document.getElementById("result").style.opacity = 1;
+                document.getElementById("result").style.opacity = 1;
             }
+
+            var newContent = "";
+            var firstLine = true;
+            for (var i in response.lines) {
+                if (firstLine == true) {
+                    firstLine = false;
+                } else {
+                    newContent += "<br/>\n";
+                }
+                newContent += response.lines[i].code;
+            }
+            document.getElementById("input").innerHTML = newContent;
 		}
 		request.open(method, url, async);
 		request.setRequestHeader("Content-Type", "plain/text;charset=UTF-8");

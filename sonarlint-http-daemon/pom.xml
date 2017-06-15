@@ -51,8 +51,13 @@
 			<artifactId>sonarlint-daemon</artifactId>
 			<version>2.15-SNAPSHOT</version>
 		</dependency>
-		
-<!-- 		<dependency> -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+		</dependency>
+
+		<!-- 		<dependency> -->
 <!-- 			<groupId>${project.groupId}</groupId> -->
 <!-- 			<artifactId>sonarlint-daemon-protocol</artifactId> -->
 <!-- 			<version>${project.version}</version> -->

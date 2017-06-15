@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletConfig;
@@ -148,21 +149,34 @@ public class AnalyzerServlet extends HttpServlet {
   }
 
   private void writeResponse(String content, List<SonarlintDaemon.RuleDetails> rules, List<Issue> issues, JsonWriter json) {
-    writeLines(content, json);
+    writeLines(content, issues, json);
     writePagination(issues, json);
     writeIssues(issues, rules, json);
     writeRules(rules, json);
   }
 
-  private void writeLines(String content, JsonWriter json) {
+  private void writeLines(String content, List<Issue> issues, JsonWriter json) {
     json.name("lines");
     json.beginArray();
     AtomicInteger i = new AtomicInteger();
-    Arrays.stream(content.split("\n")).forEach(line -> {
-      json.beginObject();
-      json.prop("line", i.getAndIncrement());
-      json.prop("code", line);
-      json.endObject();
+    AtomicReference<String> line = new AtomicReference("");
+
+    List<CodePiece> pieces = new Underliner(content).underline(issues);
+
+    pieces.forEach(piece -> {
+      if (piece.getType() == PieceType.LINE_START) {
+        json.beginObject();
+        json.prop("line", i.getAndIncrement());
+      } else if (piece.getType() == PieceType.UNDERLINE_START) {
+        line.getAndUpdate(l -> l + "<span class=\"source-line-code-issue\">");
+      } else if (piece.getType() == PieceType.TEXT) {
+        line.getAndUpdate(l -> l + piece.getText());
+      } else if (piece.getType() == PieceType.UNDERLINE_END) {
+        line.getAndUpdate(l -> l + "</span>");
+      } else if (piece.getType() == PieceType.LINE_END) {
+        json.prop("code", line.getAndSet(""));
+        json.endObject();
+      }
     });
     json.endArray();
   }
