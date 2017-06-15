@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -45,6 +46,15 @@ import io.grpc.stub.StreamObserver;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class AnalyzerServlet extends HttpServlet {
+
+  private StandaloneSonarLintImpl sonarlint;
+
+  @Override
+  public void init(ServletConfig config) throws ServletException {
+    super.init(config);
+    Path sonarlintHome = Paths.get(".");
+    sonarlint = new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome));
+  }
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -67,9 +77,6 @@ public class AnalyzerServlet extends HttpServlet {
         language = "JavaScript";
         json.value("No language specified, defaulting to " + language);
       }
-
-      Path sonarlintHome = Paths.get(".");
-      StandaloneSonarLintImpl sonarlint = new StandaloneSonarLintImpl(Utils.getAnalyzers(sonarlintHome));
 
       List<Issue> issues = getIssues(json, sonarlint, postBody, language);
       List<SonarlintDaemon.RuleDetails> rules = getRules(json, sonarlint, issues);
