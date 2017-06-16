@@ -38,16 +38,21 @@
         }
 
         #input {
-        position: fixed;
-        top: 123px;
-        left: 420px;
-        bottom: 30px;
-        right: 30px;
-        background: white;
-        color: black;
-        overflow: auto;
-        font-family: monospace;
-        padding: 10px;
+            position: fixed;
+            top: 123px;
+            left: 420px;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            color: black;
+            overflow: auto;
+
+            font-family: Consolas,Liberation Mono,Menlo,Courier,monospace;
+            font-size: 12px;
+            line-height: 18px;
+            color: #666;
+
+            padding: 10px;
         }
 
         select {
@@ -154,7 +159,7 @@
         code</h2>
 <div id="content">
         <div id="result" style="position: fixed; top: 123px; left: 30px; width: 350px; bottom: 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black; overflow: auto; transition: opacity 0.3s;"></div>
-        <div contenteditable="true" id="input" oninput="analyze()">
+        <div contenteditable="true" id="input" oninput="analyze()" spellcheck="false">
 <span class="source-line-code-issue">arr</span> = [1, 2, 3];<br>
 for (var x in arr) {<br>
 &nbsp;&nbsp;console.log(x);<br>
