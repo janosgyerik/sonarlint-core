@@ -59,8 +59,8 @@ public class AnalyzerServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String postBody = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-    if (postBody == null || postBody.isEmpty()) {
+    String code = req.getParameter("code");
+    if (code == null || code.isEmpty()) {
       resp.getWriter().write("No content");
       resp.setStatus(400);
       return;
@@ -79,11 +79,11 @@ public class AnalyzerServlet extends HttpServlet {
         json.value("No language specified, defaulting to " + language);
       }
 
-      List<Issue> issues = getIssues(json, sonarlint, postBody, language);
+      List<Issue> issues = getIssues(json, sonarlint, code, language);
       List<SonarlintDaemon.RuleDetails> rules = getRules(json, sonarlint, issues);
 
       json.endArray();
-      writeResponse(postBody, rules, issues, json);
+      writeResponse(code, rules, issues, json);
       json.endObject();
     }
     resp.setStatus(200);

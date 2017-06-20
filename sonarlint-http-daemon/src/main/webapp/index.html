@@ -170,7 +170,7 @@ function doRestore() {
 
 	function analyze() {
 		document.getElementById("result").style.opacity = 0.5;
-		var url = "http://localhost:8080/analyze?language="+document.getElementById("language").value;
+		var url = "http://localhost:8080/analyze";
 		var method = "POST";
 		var async = true;
 		var request = new XMLHttpRequest();
@@ -205,10 +205,16 @@ function doRestore() {
             document.getElementById("input").innerHTML = newContent;
             doRestore();
 		}
-		request.open(method, url, async);
-		request.setRequestHeader("Content-Type", "plain/text;charset=UTF-8");
-		request.send(document.getElementById("input").textContent);
-		document.getElementById("result").style.opacity = 0.7;
+
+        var language = document.getElementById("language").value;
+        var code = document.getElementById("input").value;
+
+		if (code !== "") {
+            request.open(method, url, async);
+            request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.send("language=" + encodeURIComponent(language) + "&code=" + encodeURIComponent(code));
+            document.getElementById("result").style.opacity = 0.7;
+		}
 	}
     </script>
     <style type="text/css">
@@ -245,12 +251,8 @@ function doRestore() {
         </select>
         code</h2>
 <div id="content">
-        <div id="result" style="position: fixed; top: 123px; left: 30px; width: 350px; bottom: 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black; overflow: auto; transition: opacity 0.3s;"></div>
-        <div contenteditable="true" id="input" oninput="analyze()" spellcheck="false">
-<span class="source-line-code-issue">arr</span> = [1, 2, 3];<br>
-for (var x in arr) {<br>
-&nbsp;&nbsp;console.log(x);<br>
-}</div>
+    <div id="result" style="position: fixed; top: 123px; left: 30px; width: 350px; bottom: 30px; padding: 10px 10px 15px 10px; background: #f3f3f3; color: black; overflow: auto; transition: opacity 0.3s;"></div>
+    <textarea id="input" onchange="analyze()" cols="80"></textarea>
 </div>
 </body>
 </html>
