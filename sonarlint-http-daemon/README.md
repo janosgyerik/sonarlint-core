@@ -29,6 +29,35 @@ Run:
 
     mvn jetty:run
 
-Open http://localhost:8080 in your browser,
-or curl -X POST localhost:8080/analyze -d language=javascript -d yourcode
+Open http://localhost:8080 in your browser, or:
 
+    curl -X POST localhost:8080/analyze -d language=javascript -d yourcode
+    curl -X POST localhost:8080/analyze -d language=javascript -d "$(cat yourfile)"
+
+### Using the web interface
+
+1. Select the language
+2. Copy-paste some code
+3. Un-focus the text editor (press tab) to trigger analysis
+
+The analysis results should appear within a second.
+
+### Code samples that should report issues
+
+JavaScript:
+
+    var arr = [1, 2, 3];
+    for (i in arr) {
+        console.log(i);
+    }
+
+Python:
+
+    def indexOf:
+        pass
+
+PHP:
+
+    <?php
+    // var a = [1, 2, 3];
+    ?>
