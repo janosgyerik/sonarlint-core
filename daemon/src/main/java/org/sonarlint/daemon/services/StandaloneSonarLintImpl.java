@@ -76,6 +76,13 @@ public class StandaloneSonarLintImpl extends StandaloneSonarLintGrpc.StandaloneS
   private final Map<String, String> extensions = new HashMap<>();
   {
     extensions.put("JavaScript", "js");
+    extensions.put("Python", "py");
+    extensions.put("PHP", "php");
+    extensions.put("Java", "java");
+    extensions.put("C#", "cs");
+    extensions.put("VB.NET", "vb");
+    extensions.put("C", "c");
+    extensions.put("C++", "cpp");
   }
 
   public StandaloneSonarLintImpl(Collection<URL> analyzers) {
