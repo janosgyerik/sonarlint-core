@@ -17,48 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.net.URL;
 import java.util.List;
 
-public interface PluginIndexProvider {
+public class StandalonePluginUrls {
+  private final List<URL> pluginUrls;
 
-  List<PluginReference> references();
-
-  class PluginReference {
-
-    private String hash;
-    private URL downloadUrl;
-    private String filename;
-
-    public String getHash() {
-      return hash;
-    }
-
-    public PluginReference setHash(String hash) {
-      this.hash = hash;
-      return this;
-    }
-
-    public URL getDownloadUrl() {
-      return downloadUrl;
-    }
-
-    public PluginReference setDownloadUrl(URL downloadUrl) {
-      this.downloadUrl = downloadUrl;
-      return this;
-    }
-
-    public String getFilename() {
-      return filename;
-    }
-
-    public PluginReference setFilename(String filename) {
-      this.filename = filename;
-      return this;
-    }
-
+  public StandalonePluginUrls(List<URL> pluginUrls) {
+    this.pluginUrls = pluginUrls;
   }
-
+  
+  public List<URL> urls() {
+    return pluginUrls;
+  }
 }

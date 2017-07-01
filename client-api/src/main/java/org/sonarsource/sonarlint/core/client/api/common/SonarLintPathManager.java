@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-public class RemotePluginFile {
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-  private String filename;
-  private String hash;
+public class SonarLintPathManager {
 
-  public RemotePluginFile(String filename, String hash) {
-    this.filename = filename;
-    this.hash = hash;
+  public static final String SONARLINT_USER_HOME_ENV = "SONARLINT_USER_HOME";
+
+  private SonarLintPathManager() {
+    // utility class, forbidden constructor
   }
 
-  public String getFilename() {
-    return filename;
-  }
-
-  public String getHash() {
-    return hash;
+  public static Path home() {
+    String path = System.getenv(SONARLINT_USER_HOME_ENV);
+    if (path != null) {
+      return Paths.get(path);
+    }
+    return Paths.get(System.getProperty("user.home")).resolve(".sonarlint");
   }
 }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2009-2017 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
-
-import java.nio.file.Path;
-import java.time.LocalDate;
+package org.sonarsource.sonarlint.core.client.api.exceptions;
 
 /**
- * Collects usage data.
+ * This exception will never be returned as a cause for another exception.
+ * The SonarLint engines extract it as return it by itself if it finds it in the causal chain of an exception. 
+ * See {@link SonarLintWrappedException}.
  */
-public class TelemetryDataCollection {
-  private final TelemetryStorage storage;
-  private Path filePath;
-
-  TelemetryDataCollection(TelemetryStorage storage, Path filePath) {
-    this.storage = storage;
-    this.filePath = filePath;
-  }
-
-  public void analysisDone() {
-    LocalDate today = LocalDate.now();
-    LocalDate lastUsed = storage.lastUseDate();
-    if (lastUsed == null || !lastUsed.equals(today)) {
-      storage.setLastUseDate(today);
-      storage.setNumUseDays(storage.numUseDays() + 1);
-      storage.safeSave(filePath);
-    }
+public class MessageException extends SonarLintException {
+  public MessageException(String msg) {
+    super(msg, null);
   }
 }

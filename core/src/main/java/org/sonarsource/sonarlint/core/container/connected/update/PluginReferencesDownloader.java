@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
@@ -87,11 +87,11 @@ public class PluginReferencesDownloader {
     for (PluginReference ref : refs.getReferenceList()) {
       pluginCache.get(ref.getFilename(), ref.getHash(), new SonarQubeServerPluginDownloader(ref.getKey()));
     }
-    ProtobufUtil.writeToFile(refs, dest.resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(refs, dest.resolve(StoragePaths.PLUGIN_REFERENCES_PB));
     return refs;
   }
 
-  private class SonarQubeServerPluginDownloader implements PluginCache.Downloader {
+  private class SonarQubeServerPluginDownloader implements PluginCache.Copier {
     private String key;
 
     SonarQubeServerPluginDownloader(String key) {
@@ -99,7 +99,7 @@ public class PluginReferencesDownloader {
     }
 
     @Override
-    public void download(String filename, Path toFile) throws IOException {
+    public void copy(String filename, Path toFile) throws IOException {
       String url = format("/deploy/plugins/%s/%s", key, filename);
       if (LOG.isDebugEnabled()) {
         LOG.debug("Download plugin {} to {}", filename, toFile);

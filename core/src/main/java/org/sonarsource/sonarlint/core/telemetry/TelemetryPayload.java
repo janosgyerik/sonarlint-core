@@ -23,7 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * Models the usage data uploaded
+ * Models the usage telemetryData uploaded
  */
 class TelemetryPayload {
   @SerializedName("days_since_installation")

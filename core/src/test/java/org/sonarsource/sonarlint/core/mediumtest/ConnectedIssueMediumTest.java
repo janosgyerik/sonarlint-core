@@ -47,9 +47,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StorageManager;
+import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
-import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Downloader;
+import org.sonarsource.sonarlint.core.plugin.cache.PluginCache.Copier;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
@@ -82,7 +82,7 @@ public class ConnectedIssueMediumTest {
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    Files.move(tmpStorage.resolve("local"), tmpStorage.resolve(StorageManager.encodeForFs(SERVER_ID)));
+    Files.move(tmpStorage.resolve("local"), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -91,10 +91,10 @@ public class ConnectedIssueMediumTest {
       .setHash(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH)
       .setKey("javascript")
       .build());
-    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, new Copier() {
 
       @Override
-      public void download(String filename, Path toFile) throws IOException {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.copyURLToFile(PluginLocator.getJavaScriptPluginUrl(), toFile.toFile());
       }
     });
@@ -104,19 +104,19 @@ public class ConnectedIssueMediumTest {
       .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH)
       .setKey("java")
       .build());
-    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Downloader() {
+    cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH, new Copier() {
 
       @Override
-      public void download(String filename, Path toFile) throws IOException {
+      public void copy(String filename, Path toFile) throws IOException {
         FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile());
       }
     });
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("global").resolve(StorageManager.PLUGIN_REFERENCES_PB));
+    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     // update versions in test storage and create an empty stale module storage
-    writeModuleStatus(tmpStorage, "test-project", StorageManager.STORAGE_VERSION);
-    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, StorageManager.STORAGE_VERSION);
+    writeModuleStatus(tmpStorage, "test-project", StoragePaths.STORAGE_VERSION);
+    writeModuleStatus(tmpStorage, JAVA_MODULE_KEY, StoragePaths.STORAGE_VERSION);
     writeModuleStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
@@ -132,7 +132,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeModuleStatus(Path storage, String name, String version) throws IOException {
-    Path module = storage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("modules").resolve(name);
+    Path module = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("modules").resolve(name);
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -141,20 +141,20 @@ public class ConnectedIssueMediumTest {
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve(StorageManager.encodeForFs(SERVER_ID)).resolve("global");
+    Path module = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StorageManager.STORAGE_VERSION)
+      .setStorageVersion(StoragePaths.STORAGE_VERSION)
       .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StorageManager.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
   }
 
   @AfterClass
@@ -163,6 +163,12 @@ public class ConnectedIssueMediumTest {
       sonarlint.stop(true);
       sonarlint = null;
     }
+  }
+
+  @Test
+  public void testContainerInfo() {
+    assertThat(sonarlint.getLoadedAnalyzers()).extracting("key").containsOnly("java", "javascript");
+    assertThat(sonarlint.allModulesByKey().keySet()).containsOnly("test-project", "test-project-2");
   }
 
   @Test

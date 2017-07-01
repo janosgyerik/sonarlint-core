@@ -28,8 +28,8 @@ import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.profiles.ProfileDefinition;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 
 public class ExtensionInstaller {
@@ -37,9 +37,9 @@ public class ExtensionInstaller {
   private static final Logger LOG = LoggerFactory.getLogger(ExtensionInstaller.class);
 
   private final SonarRuntime sqRuntime;
-  private final DefaultPluginRepository pluginRepository;
+  private final PluginRepository pluginRepository;
 
-  public ExtensionInstaller(SonarRuntime sqRuntime, DefaultPluginRepository pluginRepository) {
+  public ExtensionInstaller(SonarRuntime sqRuntime, PluginRepository pluginRepository) {
     this.sqRuntime = sqRuntime;
     this.pluginRepository = pluginRepository;
   }
@@ -74,7 +74,7 @@ public class ExtensionInstaller {
       if (isExplicitlySonarLintCompatible) {
         // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
         // filter out non officially supported Sensors
-        if (ExtensionUtils.isSonarLintSide(extension) && (PluginCopier.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
+        if (ExtensionUtils.isSonarLintSide(extension) && (PluginCacheLoader.isWhitelisted(pluginInfo.getKey()) || isNotSensor(extension))) {
           container.addExtension(pluginInfo, extension);
         }
       } else if (!blacklisted(extension) && (ExtensionUtils.isScannerSide(extension) || ExtensionUtils.isType(extension, ProfileDefinition.class))) {

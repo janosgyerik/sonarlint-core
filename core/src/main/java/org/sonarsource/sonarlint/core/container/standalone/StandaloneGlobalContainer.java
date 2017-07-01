@@ -43,15 +43,16 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
+import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
 import org.sonarsource.sonarlint.core.container.model.DefaultRuleDetails;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
-import org.sonarsource.sonarlint.core.plugin.DefaultPluginRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginClassloaderFactory;
-import org.sonarsource.sonarlint.core.plugin.PluginCopier;
+import org.sonarsource.sonarlint.core.plugin.PluginCacheLoader;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginLoader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
@@ -65,7 +66,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
     container.add(globalConfig);
-    container.add(new StandalonePluginIndexProvider(globalConfig.getPluginUrls()));
+    container.add(new StandalonePluginUrls(globalConfig.getPluginUrls()));
     return container;
   }
 
@@ -73,8 +74,10 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   protected void doBeforeStart() {
     Version version = ApiVersion.load(System2.INSTANCE);
     add(
-      DefaultPluginRepository.class,
-      PluginCopier.class,
+      StandalonePluginIndex.class,
+      PluginRepository.class,
+      PluginVersionChecker.class,
+      PluginCacheLoader.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
@@ -91,12 +94,11 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   @Override
   protected void doAfterStart() {
     installPlugins();
-
     loadRulesAndActiveRulesFromPlugins();
   }
 
   protected void installPlugins() {
-    DefaultPluginRepository pluginRepository = getComponentByType(DefaultPluginRepository.class);
+    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getPluginInfos()) {
       Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
