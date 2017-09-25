@@ -314,12 +314,6 @@
                   <version>1.7.0.1195</version>
                   <type>jar</type>
                 </artifactItem>
-                <artifactItem>
-                  <groupId>com.sonarsource.cpp</groupId>
-                  <artifactId>sonar-cfamily-plugin</artifactId>
-                  <version>4.11.0.8443</version>
-                  <type>jar</type>
-                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
