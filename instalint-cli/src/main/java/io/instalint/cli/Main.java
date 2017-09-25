@@ -19,9 +19,14 @@
  */
 package io.instalint.cli;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,13 +44,18 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 public class Main {
   public static void main(String[] args) throws IOException {
     StandaloneGlobalConfiguration globalConfig = StandaloneGlobalConfiguration.builder()
+      .addPlugin(new File("./core/target/plugins/sonar-java-plugin-4.8.0.9441.jar").toURI().toURL())
       .build();
     StandaloneSonarLintEngine engine = new StandaloneSonarLintEngineImpl(globalConfig);
 
     Path tmp = newTempDir();
     Path baseDir = newDir(tmp.resolve("base"));
     Path workDir = newDir(tmp.resolve("work"));
-    Iterable<ClientInputFile> inputFiles = Collections.emptyList();
+    InputFileFinder inputFileFinder = new InputFileFinder("**/*.java", "none", "none", StandardCharsets.UTF_8);
+    Iterable<ClientInputFile> inputFiles = inputFileFinder.collect(Paths.get(".").toAbsolutePath());
+    // TODO get some .java files in here!
+    System.out.println(inputFiles);
+
     Map<String, String> extraProperties = new HashMap<>();
     StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, inputFiles, extraProperties);
 
@@ -56,6 +66,7 @@ public class Main {
       System.out.println(formattedMessage);
     };
     ProgressMonitor monitor = new ProgressMonitor() {};
+
     AnalysisResults results = engine.analyze(config, issueListener, logOutput, monitor);
     System.out.println(results.failedAnalysisFiles());
     System.out.println(results.fileCount());
