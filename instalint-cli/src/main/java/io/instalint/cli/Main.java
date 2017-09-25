@@ -42,7 +42,6 @@ public class Main {
       .build();
     StandaloneSonarLintEngine engine = new StandaloneSonarLintEngineImpl(globalConfig);
 
-
     Path tmp = newTempDir();
     Path baseDir = newDir(tmp.resolve("base"));
     Path workDir = newDir(tmp.resolve("work"));
@@ -50,17 +49,11 @@ public class Main {
     Map<String, String> extraProperties = new HashMap<>();
     StandaloneAnalysisConfiguration config = new StandaloneAnalysisConfiguration(baseDir, workDir, inputFiles, extraProperties);
 
-    IssueListener issueListener = new IssueListener() {
-      @Override
-      public void handle(Issue issue) {
-
-      }
+    IssueListener issueListener = issue -> {
+      System.out.println("handle issue");
     };
-    LogOutput logOutput = new LogOutput() {
-      @Override
-      public void log(String formattedMessage, Level level) {
-
-      }
+    LogOutput logOutput = (formattedMessage, level) -> {
+      System.out.println(formattedMessage);
     };
     ProgressMonitor monitor = new ProgressMonitor() {};
     AnalysisResults results = engine.analyze(config, issueListener, logOutput, monitor);
