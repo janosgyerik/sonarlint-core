@@ -94,12 +94,14 @@ public class InputFileFinder {
     private final Path baseDir;
 
     private FileCollector(Path baseDir, List<ClientInputFile> files) {
+      System.out.println("basedir: " + baseDir);
       this.baseDir = baseDir;
       this.files = files;
     }
 
     @Override
     public FileVisitResult visitFile(final Path file, BasicFileAttributes attrs) throws IOException {
+      System.out.println("visit: " + file);
       Path absoluteFilePath = file;
       Path relativeFilePath = baseDir.relativize(absoluteFilePath);
       boolean isSrc = srcMatcher.matches(absoluteFilePath) || srcMatcher.matches(relativeFilePath);

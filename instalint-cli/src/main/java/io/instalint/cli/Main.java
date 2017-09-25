@@ -22,6 +22,7 @@ package io.instalint.cli;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,7 +52,7 @@ public class Main {
     Path tmp = newTempDir();
     Path baseDir = newDir(tmp.resolve("base"));
     Path workDir = newDir(tmp.resolve("work"));
-    InputFileFinder inputFileFinder = new InputFileFinder("**/*.java", "none", "none", StandardCharsets.UTF_8);
+    InputFileFinder inputFileFinder = new InputFileFinder("**/*.java", null, null, Charset.defaultCharset());
     Iterable<ClientInputFile> inputFiles = inputFileFinder.collect(Paths.get(".").toAbsolutePath());
     // TODO get some .java files in here!
     System.out.println(inputFiles);
