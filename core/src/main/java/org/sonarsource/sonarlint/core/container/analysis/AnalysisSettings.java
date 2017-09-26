@@ -25,11 +25,7 @@ import java.util.Optional;
 import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ModuleConfiguration;
 
 public class AnalysisSettings extends Settings {
   private static final String C_SUFFIXES_KEY = "sonar.c.file.suffixes";
@@ -45,18 +41,6 @@ public class AnalysisSettings extends Settings {
     addProperties(config.extraProperties());
   }
 
-  public AnalysisSettings(StorageReader storage, StandaloneAnalysisConfiguration config, PropertyDefinitions propertyDefinitions) {
-    super(propertyDefinitions, new Encryption(null));
-    GlobalProperties globalProps = storage.readGlobalProperties();
-    addProperties(globalProps.getPropertiesMap());
-    if (config instanceof ConnectedAnalysisConfiguration && ((ConnectedAnalysisConfiguration) config).moduleKey() != null) {
-      ModuleConfiguration projectConfig = storage.readModuleConfig(((ConnectedAnalysisConfiguration) config).moduleKey());
-      addProperties(projectConfig.getPropertiesMap());
-    }
-    addDefaultProperties();
-    addProperties(config.extraProperties());
-  }
-  
   private void addDefaultProperties() {
     setProperty(C_SUFFIXES_KEY, DISABLED_SUFFIX);
     setProperty(CPP_SUFFIXES_KEY, DISABLED_SUFFIX);

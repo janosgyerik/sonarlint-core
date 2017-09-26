@@ -24,15 +24,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
 import org.picocontainer.Startable;
 import org.sonar.api.Plugin;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.LoadedAnalyzer;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultLoadedAnalyzer;
 
 /**
@@ -46,12 +42,10 @@ public class PluginRepository implements Startable {
 
   private Map<String, Plugin> pluginInstancesByKeys;
   private Map<String, PluginInfo> infosByKeys;
-  private PluginVersionChecker pluginVersionChecker;
 
-  public PluginRepository(PluginCacheLoader cacheLoader, PluginLoader loader, PluginVersionChecker pluginVersionChecker) {
+  public PluginRepository(PluginCacheLoader cacheLoader, PluginLoader loader) {
     this.cacheLoader = cacheLoader;
     this.loader = loader;
-    this.pluginVersionChecker = pluginVersionChecker;
   }
 
   @Override
@@ -90,19 +84,7 @@ public class PluginRepository implements Startable {
 
   private LoadedAnalyzer pluginInfoToLoadedAnalyzer(PluginInfo p) {
     String version = p.getVersion() != null ? p.getVersion().toString() : null;
-    boolean streamSupport = supportsStream(p.getKey(), version);
-    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version, streamSupport);
-  }
-
-  private boolean supportsStream(String analyzerKey, @Nullable String version) {
-    String minVersion = pluginVersionChecker.getMinimumStreamSupportVersion(analyzerKey);
-    if (version == null || minVersion == null) {
-      return false;
-    }
-
-    Version v = Version.create(version);
-    Version minimalVersion = Version.create(minVersion);
-    return v.compareTo(minimalVersion) >= 0;
+    return new DefaultLoadedAnalyzer(p.getKey(), p.getName(), version, true);
   }
 
   public Collection<PluginInfo> getPluginInfos() {

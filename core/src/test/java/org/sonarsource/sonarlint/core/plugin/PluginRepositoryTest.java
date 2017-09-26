@@ -30,20 +30,17 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.Plugin;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 
 public class PluginRepositoryTest {
   private PluginRepository pluginRepository;
   private PluginCacheLoader cacheLoader;
   private PluginLoader loader;
-  private PluginVersionChecker versionChecker;
 
   @Before
   public void setup() {
     cacheLoader = mock(PluginCacheLoader.class);
     loader = mock(PluginLoader.class);
-    versionChecker = mock(PluginVersionChecker.class);
-    pluginRepository = new PluginRepository(cacheLoader, loader, versionChecker);
+    pluginRepository = new PluginRepository(cacheLoader, loader);
   }
 
   @Test
@@ -64,7 +61,6 @@ public class PluginRepositoryTest {
     Map<String, PluginInfo> infos = Collections.singletonMap("key", info);
     when(cacheLoader.load()).thenReturn(infos);
     when(loader.load(infos)).thenReturn(Collections.singletonMap("key", plugin));
-    when(versionChecker.getMinimumStreamSupportVersion("key")).thenReturn("1.0");
     pluginRepository.start();
 
     verify(loader).load(infos);

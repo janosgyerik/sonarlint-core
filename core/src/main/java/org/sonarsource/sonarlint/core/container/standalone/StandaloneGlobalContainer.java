@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.analysis.AnalysisContainer;
-import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
@@ -79,7 +78,6 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     add(
       StandalonePluginIndex.class,
       PluginRepository.class,
-      PluginVersionChecker.class,
       PluginCacheLoader.class,
       PluginLoader.class,
       PluginClassloaderFactory.class,

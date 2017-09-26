@@ -47,10 +47,6 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBui
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCache;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.EnforceIssuesFilter;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.IgnoreIssuesFilter;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
-import org.sonarsource.sonarlint.core.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -101,14 +97,6 @@ public class AnalysisContainer extends ComponentContainer {
       LanguageDetection.class,
       FileIndexer.class,
       SonarLintFileSystem.class,
-
-      // Exclusions in connected mode
-      ServerSettingsProvider.class,
-      ExclusionFilters.class,
-      EnforceIssuesFilter.class,
-      IgnoreIssuesFilter.class,
-      IssueExclusionPatternInitializer.class,
-      IssueInclusionPatternInitializer.class,
 
       SensorOptimizer.class,
 
