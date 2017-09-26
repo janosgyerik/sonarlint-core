@@ -31,24 +31,22 @@ import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.error.NewAnalysisError;
 import org.sonar.api.batch.sensor.error.internal.DefaultAnalysisError;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
+import org.sonar.api.batch.sensor.highlighting.internal.DefaultHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
+import org.sonar.api.batch.sensor.symbol.internal.DefaultSymbolTable;
 import org.sonar.api.config.Settings;
 import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
-import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewHighlighting;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
-import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewSymbolTable;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class DefaultSensorContext implements SensorContext {
 
-  private static final NoOpNewHighlighting NO_OP_NEW_HIGHLIGHTING = new NoOpNewHighlighting();
-  private static final NoOpNewSymbolTable NO_OP_NEW_SYMBOL_TABLE = new NoOpNewSymbolTable();
   private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
   private static final NoOpNewCoverage NO_OP_NEW_COVERAGE = new NoOpNewCoverage();
 
@@ -98,7 +96,14 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewHighlighting newHighlighting() {
-    return NO_OP_NEW_HIGHLIGHTING;
+
+    return new DefaultHighlighting(sensorStorage) {
+      @Override
+      public DefaultHighlighting onFile(InputFile inputFile) {
+        System.out.println("highlight! " + inputFile);
+        return super.onFile(inputFile);
+      }
+    };
   }
 
   @Override
@@ -123,7 +128,13 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public NewSymbolTable newSymbolTable() {
-    return NO_OP_NEW_SYMBOL_TABLE;
+    return new DefaultSymbolTable(sensorStorage) {
+      @Override
+      public DefaultSymbolTable onFile(InputFile inputFile) {
+        System.out.println("symbols! " + inputFile);
+        return super.onFile(inputFile);
+      }
+    };
   }
 
   @Override

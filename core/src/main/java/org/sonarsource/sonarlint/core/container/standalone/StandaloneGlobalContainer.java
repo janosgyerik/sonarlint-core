@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.sonar.api.Plugin;
+import org.sonar.api.SonarQubeSide;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -85,7 +86,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       DefaultPluginJarExploder.class,
       ExtensionInstaller.class,
       new SonarQubeVersion(version),
-      SonarRuntimeImpl.forSonarLint(version),
+      SonarRuntimeImpl.forSonarQube(version, SonarQubeSide.SCANNER),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
