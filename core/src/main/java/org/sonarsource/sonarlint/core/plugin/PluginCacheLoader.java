@@ -28,7 +28,6 @@ import java.util.Map;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -80,13 +79,8 @@ public class PluginCacheLoader {
     Path jar;
     try {
       jar = fileCache.get(pluginReference.getFilename(), pluginReference.getHash());
-    } catch (StorageException e) {
-      throw e;
     } catch (Exception e) {
       throw new IllegalStateException("Fail to find plugin " + pluginReference.getFilename() + " in the cache", e);
-    }
-    if (jar == null) {
-      throw new StorageException("Couldn't find plugin '" + pluginReference.getFilename() + "' in the cache. Please update the binding", false);
     }
     return jar;
   }

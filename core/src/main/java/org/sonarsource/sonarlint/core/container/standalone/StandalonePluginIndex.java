@@ -30,7 +30,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -61,8 +60,6 @@ public class StandalonePluginIndex implements PluginIndex {
       String filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");
       fileCache.get(filename, hash, new FileCopier(pluginUrl));
       return new PluginReference(hash, filename);
-    } catch (StorageException e) {
-      throw e;
     } catch (Exception e) {
       throw new IllegalStateException("Fail to copy plugin from URL: " + pluginUrl, e);
     }

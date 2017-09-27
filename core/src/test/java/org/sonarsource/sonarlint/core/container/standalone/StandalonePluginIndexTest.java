@@ -38,7 +38,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
@@ -68,14 +67,6 @@ public class StandalonePluginIndexTest {
     assertThat(references).hasSize(1);
 
     verify(cache).get(eq("filename"), eq("b45cffe084dd3d20d928bee85e7b0f21"), any(PluginCache.Copier.class));
-  }
-
-  @Test
-  public void testCacheStorageError() {
-    when(cache.get(eq("filename"), eq("b45cffe084dd3d20d928bee85e7b0f21"), any(PluginCache.Copier.class))).thenThrow(new StorageException("msg", true));
-    exception.expect(StorageException.class);
-    exception.expectMessage("msg");
-    index.references();
   }
 
   @Test
