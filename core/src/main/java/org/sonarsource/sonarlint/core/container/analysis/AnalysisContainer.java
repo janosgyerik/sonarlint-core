@@ -35,7 +35,6 @@ import org.sonarsource.sonarlint.core.analyzer.noop.NoOpTestableBuilder;
 import org.sonarsource.sonarlint.core.analyzer.perspectives.BatchPerspectives;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.DefaultSensorStorage;
-import org.sonarsource.sonarlint.core.analyzer.sensor.LtsApiSensorContext;
 import org.sonarsource.sonarlint.core.analyzer.sensor.PhaseExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.ScannerExtensionDictionnary;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
@@ -98,7 +97,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       DefaultSensorContext.class,
       DefaultSensorStorage.class,
-      LtsApiSensorContext.class,
       ScannerExtensionDictionnary.class,
       IssueFilters.class,
 
