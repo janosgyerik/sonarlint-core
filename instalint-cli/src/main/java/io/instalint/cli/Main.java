@@ -62,8 +62,8 @@ public class Main {
     };
 
     AnalysisResults results = engine.analyze(config, issueListener, logOutput);
-    System.out.println(results.failedAnalysisFiles());
-    System.out.println(results.fileCount());
+    System.out.println("failed files: " + results.failedAnalysisFiles());
+    System.out.println("filecount: " + results.fileCount());
   }
 
   private static Path newDir(Path path) throws IOException {

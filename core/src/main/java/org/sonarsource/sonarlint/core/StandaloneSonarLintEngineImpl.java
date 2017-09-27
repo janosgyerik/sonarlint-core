@@ -49,10 +49,6 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     start();
   }
 
-  public StandaloneGlobalContainer getGlobalContainer() {
-    return globalContainer;
-  }
-
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
