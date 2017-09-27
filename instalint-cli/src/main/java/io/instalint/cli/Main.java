@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -61,9 +60,8 @@ public class Main {
     LogOutput logOutput = (formattedMessage, level) -> {
       System.out.println("log: " + formattedMessage);
     };
-    ProgressMonitor monitor = new ProgressMonitor() {};
 
-    AnalysisResults results = engine.analyze(config, issueListener, logOutput, monitor);
+    AnalysisResults results = engine.analyze(config, issueListener, logOutput);
     System.out.println(results.failedAnalysisFiles());
     System.out.println(results.fileCount());
   }

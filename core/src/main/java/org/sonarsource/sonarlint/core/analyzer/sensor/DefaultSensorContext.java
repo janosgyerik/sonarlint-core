@@ -43,7 +43,6 @@ import org.sonar.api.utils.Version;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analyzer.sensor.noop.NoOpNewMeasure;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class DefaultSensorContext implements SensorContext {
 
@@ -56,17 +55,15 @@ public class DefaultSensorContext implements SensorContext {
   private final SensorStorage sensorStorage;
   private final InputModule module;
   private final SonarRuntime sqRuntime;
-  private final ProgressWrapper progress;
 
   public DefaultSensorContext(InputModule module, Settings settings, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime, ProgressWrapper progress) {
+    SonarRuntime sqRuntime) {
     this.module = module;
     this.settings = settings;
     this.fs = fs;
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
     this.sqRuntime = sqRuntime;
-    this.progress = progress;
   }
 
   @Override
@@ -127,6 +124,11 @@ public class DefaultSensorContext implements SensorContext {
   }
 
   @Override
+  public boolean isCancelled() {
+    return false;
+  }
+
+  @Override
   public NewSymbolTable newSymbolTable() {
     return new DefaultSymbolTable(sensorStorage) {
       @Override
@@ -145,11 +147,6 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public NewAnalysisError newAnalysisError() {
     return new DefaultAnalysisError(sensorStorage);
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return progress.isCanceled();
   }
 
   @Override

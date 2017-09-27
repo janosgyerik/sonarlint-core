@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.Arrays.asList;
@@ -38,25 +37,22 @@ public class NewSensorsExecutor implements SensorsExecutor {
   private static final Logger LOG = LoggerFactory.getLogger(NewSensorsExecutor.class);
 
   private final SensorOptimizer sensorOptimizer;
-  private final ProgressWrapper progress;
   private final Sensor[] sensors;
   private final DefaultSensorContext context;
 
-  public NewSensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressWrapper progress) {
-    this(context, sensorOptimizer, progress, new Sensor[0]);
+  public NewSensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer) {
+    this(context, sensorOptimizer, new Sensor[0]);
   }
 
-  public NewSensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressWrapper progress, Sensor[] sensors) {
+  public NewSensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, Sensor[] sensors) {
     this.context = context;
     this.sensors = sensors;
     this.sensorOptimizer = sensorOptimizer;
-    this.progress = progress;
   }
 
   @Override
   public void execute() {
     for (Sensor sensor : sort(asList(sensors))) {
-      progress.checkCancel();
       DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
       if (sensorOptimizer.shouldExecute(descriptor)) {

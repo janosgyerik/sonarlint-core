@@ -48,16 +48,13 @@ import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputPathCac
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.SonarLintFileSystem;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class AnalysisContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(AnalysisContainer.class);
-  private final ProgressWrapper progress;
 
-  public AnalysisContainer(ComponentContainer globalContainer, ProgressWrapper progress) {
+  public AnalysisContainer(ComponentContainer globalContainer) {
     super(globalContainer);
-    this.progress = progress;
   }
 
   @Override
@@ -68,7 +65,6 @@ public class AnalysisContainer extends ComponentContainer {
 
   private void addCoreComponents() {
     add(
-      progress,
       new ProjectProvider(),
       new DefaultInputModule("sonarlint"),
       NoOpFileLinesContextFactory.class,

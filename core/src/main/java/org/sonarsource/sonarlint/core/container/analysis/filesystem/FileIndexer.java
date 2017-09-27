@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.analysis.filesystem;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -30,7 +29,6 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
-import org.sonarsource.sonarlint.core.util.ProgressReport;
 
 /**
  * Index input files into {@link InputPathCache}.
@@ -44,8 +42,6 @@ public class FileIndexer {
   private final StandaloneAnalysisConfiguration analysisConfiguration;
   private final DefaultAnalysisResult analysisResult;
 
-  private ProgressReport progressReport;
-
   public FileIndexer(InputFileBuilder inputFileBuilder, StandaloneAnalysisConfiguration analysisConfiguration,
     DefaultAnalysisResult analysisResult) {
     this.inputFileBuilder = inputFileBuilder;
@@ -54,20 +50,14 @@ public class FileIndexer {
   }
 
   void index(SonarLintFileSystem fileSystem) {
-    progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
-    progressReport.start("Index files");
-
     Progress progress = new Progress();
 
     try {
       indexFiles(fileSystem, progress, analysisConfiguration.inputFiles());
     } catch (Exception e) {
-      progressReport.stop(null);
       throw e;
     }
-    progressReport.stop(progress.count() + " files indexed");
     analysisResult.setFileCount(progress.count());
-
   }
 
   private void indexFiles(SonarLintFileSystem fileSystem, Progress progress, Iterable<ClientInputFile> inputFiles) {
@@ -100,7 +90,6 @@ public class FileIndexer {
         throw MessageException.of("File " + inputFile + " can't be indexed twice.");
       }
       indexed.add(inputFile.path());
-      progressReport.message(indexed.size() + " files indexed...  (last one was " + inputFile.absolutePath() + ")");
     }
 
     int count() {

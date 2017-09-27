@@ -26,7 +26,6 @@ import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.resources.Project;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 /**
@@ -39,18 +38,16 @@ public class AllSensorsExecutor implements SensorsExecutor {
   private final Project module;
   private final ScannerExtensionDictionnary selector;
   private final SensorsPhaseHandler[] handlers;
-  private final ProgressWrapper progress;
   private final SensorContext context;
 
-  public AllSensorsExecutor(SensorContext context, ScannerExtensionDictionnary selector, Project project, ProgressWrapper progress) {
-    this(context, selector, project, progress, new SensorsPhaseHandler[0]);
+  public AllSensorsExecutor(SensorContext context, ScannerExtensionDictionnary selector, Project project) {
+    this(context, selector, project, new SensorsPhaseHandler[0]);
   }
 
-  public AllSensorsExecutor(SensorContext context, ScannerExtensionDictionnary selector, Project project, ProgressWrapper progress, SensorsPhaseHandler[] handlers) {
+  public AllSensorsExecutor(SensorContext context, ScannerExtensionDictionnary selector, Project project, SensorsPhaseHandler[] handlers) {
     this.context = context;
     this.selector = selector;
     this.module = project;
-    this.progress = progress;
     this.handlers = handlers;
   }
 
@@ -63,7 +60,6 @@ public class AllSensorsExecutor implements SensorsExecutor {
     }
 
     for (Sensor sensor : sensors) {
-      progress.checkCancel();
       executeSensor(context, sensor);
     }
 
