@@ -20,8 +20,17 @@
 package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -63,8 +72,11 @@ import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class StandaloneGlobalContainer extends ComponentContainer {
 
+  public static final String RULE_EXCLUSIONS_PROP = "rule.exclusions";
+  public static final String RULE_EXCLUSIONS_SEPARATOR = ";";
+
   private Rules rules;
-  private ActiveRules activeRules;
+  private ActiveRulesWithExclusions activeRules;
   private Context rulesDefinitions;
   private GlobalExtensionContainer globalExtensionContainer;
 
@@ -128,7 +140,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
     rules = container.getRules();
-    activeRules = container.getActiveRules();
+    activeRules = new ActiveRulesWithExclusions(container.getActiveRules());
     rulesDefinitions = container.getRulesDefinitions();
   }
 
@@ -138,6 +150,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
     analysisContainer.add(activeRules);
+    activeRules.setExclusions(configuration.extraProperties().get(RULE_EXCLUSIONS_PROP));
     analysisContainer.add(NewSensorsExecutor.class);
     DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
@@ -168,6 +181,55 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       result.add(ar.ruleKey().toString());
     }
     return result;
+  }
+
+  static class ActiveRulesWithExclusions implements ActiveRules {
+    private final ActiveRules activeRules;
+    private final Set<RuleKey> exclusions = new HashSet<>();
+
+    public ActiveRulesWithExclusions(ActiveRules activeRules) {
+      this.activeRules = activeRules;
+    }
+
+    @CheckForNull
+    @Override
+    public ActiveRule find(RuleKey ruleKey) {
+      if (exclusions.contains(ruleKey)) {
+        return null;
+      }
+      return activeRules.find(ruleKey);
+    }
+
+    @Override
+    public Collection<ActiveRule> findAll() {
+      return activeRules.findAll();
+    }
+
+    @Override
+    public Collection<ActiveRule> findByRepository(String s) {
+      return activeRules.findByRepository(s);
+    }
+
+    @Override
+    public Collection<ActiveRule> findByLanguage(String s) {
+      return activeRules.findByLanguage(s);
+    }
+
+    @CheckForNull
+    @Override
+    public ActiveRule findByInternalKey(String s, String s1) {
+      return activeRules.findByInternalKey(s, s1);
+    }
+
+    public void setExclusions(@Nullable String serialized) {
+      exclusions.clear();
+      if (serialized == null) {
+        return;
+      }
+      Arrays.stream(serialized.split(RULE_EXCLUSIONS_SEPARATOR))
+          .map(RuleKey::parse)
+          .forEach(exclusions::add);
+    }
   }
 
 }
