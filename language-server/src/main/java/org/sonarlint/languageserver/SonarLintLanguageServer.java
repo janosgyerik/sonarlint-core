@@ -134,8 +134,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
   private static final String SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND = "SonarLint.OpenRuleDesc";
-  private static final String SONARLINT_UPDATE_SERVER_STORAGE_COMMAND = "SonarLint.UpdateServerStorage";
-  private static final String SONARLINT_UPDATE_PROJECT_BINDING_COMMAND = "SonarLint.UpdateProjectBinding";
+  static final String SONARLINT_UPDATE_SERVER_STORAGE_COMMAND = "SonarLint.UpdateServerStorage";
+  static final String SONARLINT_UPDATE_PROJECT_BINDING_COMMAND = "SonarLint.UpdateProjectBinding";
   private static final List<String> SONARLINT_COMMANDS = Arrays.asList(
     SONARLINT_OPEN_RULE_DESCRIPTION_COMMAND,
     SONARLINT_UPDATE_SERVER_STORAGE_COMMAND,
@@ -148,14 +148,16 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
   private final Collection<URL> analyzers;
-  private final EngineCache engineCache = new EngineCache();
-  private final Map<String, ServerInfo> serverInfoCache = new HashMap<>();
+  private EngineCache engineCache = new EngineCache();
+  @VisibleForTesting
+  final Map<String, ServerInfo> serverInfoCache = new HashMap<>();
 
   private UserSettings userSettings = new UserSettings();
 
   private StandaloneSonarLintEngine standaloneEngine;
 
-  private ServerProjectBinding binding;
+  @VisibleForTesting
+  ServerProjectBinding binding;
 
   private String typeScriptLocation;
 
@@ -287,13 +289,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return;
     }
 
-    List<Map<String, String>> maps;
-    try {
-      maps = (List<Map<String, String>>) connectedModeServers;
-    } catch (ClassCastException e) {
-      debug("Could not parse the value of " + CONNECTED_MODE_SERVERS_PROP + ": " + connectedModeServers);
-      return;
-    }
+    List<Map<String, String>> maps = (List<Map<String, String>>) connectedModeServers;
 
     maps.forEach(m -> {
       String serverId = m.get("serverId");
@@ -303,7 +299,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       if (!isBlank(serverId) && !isBlank(url) && !isBlank(token)) {
         serverInfoCache.put(serverId, new ServerInfo(serverId, url, token, organization));
       } else {
-        warn("Some required parameters are missing or blank: serverId, url, token");
+        warn("Some required parameters are missing or blank: serverId, serverUrl, token");
       }
     });
   }
@@ -811,6 +807,11 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return ((JsonPrimitive) obj).getAsString();
   }
 
+  @VisibleForTesting
+  void setEngineCache(EngineCache engineCache) {
+    this.engineCache = engineCache;
+  }
+
   static class ServerProjectBinding {
     final String serverId;
     final String projectKey;
@@ -821,6 +822,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
+  @VisibleForTesting
   static class ServerInfo {
     private final String serverId;
     private final String url;
@@ -836,7 +838,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     }
   }
 
-  private class EngineCache {
+  @VisibleForTesting
+  class EngineCache {
 
     final Map<String, ConnectedSonarLintEngine> cache = new HashMap<>();
     final Map<String, ServerConfiguration> serverConfigCache = new HashMap<>();
