@@ -19,7 +19,9 @@
  */
 package org.sonarlint.languageserver;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
@@ -29,9 +31,11 @@ import java.net.URI;
 import java.nio.channels.IllegalSelectorException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -55,6 +59,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
+import sun.nio.cs.ext.ISCII91;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -369,23 +374,48 @@ public class SonarLintLanguageServerTest {
 //    assertThat(ls.binding).isNull();
 //  }
 
+  static class EngineWrapper {
+    final boolean standalone;
+    final String serverId;
+
+    EngineWrapper(boolean standalone, @Nullable String serverId) {
+      this.standalone = standalone;
+      this.serverId = serverId;
+    }
+
+    static EngineWrapper standalone() {
+      return new EngineWrapper(true, null);
+    }
+
+    static EngineWrapper connected(String serverId) {
+      return new EngineWrapper(false, serverId);
+    }
+  }
+
   @Test
-  public void analyze_in_standalone_mode_when_not_bound() throws IOException {
+  public void analyze_in_standalone_mode_when_not_bound() {
     LanguageServerTester tester = newLanguageServerTester();
+    tester.initialize();
+
     tester.analyze();
     assertThat(tester.lastWasSuccess()).isTrue();
     assertThat(tester.lastErrors()).isEmpty();
-    assertThat(tester.usedStandaloneEngine()).isNotNull();
-    assertThat(tester.usedConnectedEngine()).isNull();
-  }
-
-  private LanguageServerTester newLanguageServerTester() {
-    return new LanguageServerTester(temporaryFolder);
+    assertThat(tester.lastEngine().standalone).isTrue();
   }
 
   @Test
   public void analyze_in_connected_mode_using_the_specified_server() {
-    // TODO
+    LanguageServerTester tester = newLanguageServerTester();
+    String serverId = "local1";
+    tester.setInitialServers("foo", "bar", serverId, "baz");
+    tester.setInitialBinding("local1", "project1");
+    tester.initialize();
+
+    tester.analyze();
+    assertThat(tester.lastWasSuccess()).isTrue();
+    assertThat(tester.lastErrors()).isEmpty();
+    assertThat(tester.lastEngine().standalone).isFalse();
+    assertThat(tester.lastEngine().serverId).isEqualTo(serverId);
   }
 
   @Test
@@ -434,25 +464,30 @@ public class SonarLintLanguageServerTest {
     // TODO
   }
 
+  private LanguageServerTester newLanguageServerTester() {
+    return new LanguageServerTester(temporaryFolder);
+  }
+
   enum Error {
 
   }
 
   static class FakeEngineCache implements EngineCache {
-    StandaloneSonarLintEngine usedStandaloneEngine;
-    ConnectedSonarLintEngine usedConnectedEngine;
+    EngineWrapper lastEngine;
 
     @Override
     public StandaloneSonarLintEngine getOrCreateStandaloneEngine() {
-      usedStandaloneEngine = mock(StandaloneSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-      return usedStandaloneEngine;
+      StandaloneSonarLintEngine engine = mock(StandaloneSonarLintEngine.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+      lastEngine = EngineWrapper.standalone();
+      return engine;
     }
 
     @CheckForNull
     @Override
     public ConnectedSonarLintEngine getOrCreateConnectedEngine(ServerInfo serverInfo) {
-      usedConnectedEngine = mock(ConnectedSonarLintEngine.class);
-      return usedConnectedEngine;
+      ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
+      lastEngine = EngineWrapper.connected(serverInfo.serverId);
+      return engine;
     }
 
     @Override
@@ -464,6 +499,10 @@ public class SonarLintLanguageServerTest {
     public void clearConnectedEngines() {
 
     }
+
+    EngineWrapper lastEngine() {
+      return lastEngine;
+    }
   }
 
   static class LanguageServerTester {
@@ -473,21 +512,52 @@ public class SonarLintLanguageServerTest {
     private final FakeEngineCache fakeEngineCache = new FakeEngineCache();
     private final SonarLintLanguageServer languageServer;
 
+    private boolean initialized = false;
     private boolean success = false;
     private final List<Error> errors = new ArrayList<>();
+    private List<Map<String, String>> servers = new ArrayList<>();
 
     LanguageServerTester(TemporaryFolder temporaryFolder) {
       this.temporaryFolder = temporaryFolder;
-      languageServer = newLanguageServer(fakeEngineCache);
+      this.languageServer = newLanguageServer(fakeEngineCache);
 
       // TODO init with error logger that appends to errors;
       // TODO init with analysis tracker so that we know error logger that appends to errors;
     }
 
-    public void analyze() throws IOException {
+    void initialize() {
+      InitializeParams params = mockInitializeParams();
+      JsonObject options = new JsonObject();
+      options.add(CONNECTED_MODE_SERVERS_PROP, toJson(servers));
+      params.setInitializationOptions(options);
+      when(params.getInitializationOptions()).thenReturn(options);
+
+      this.languageServer.initialize(params);
+      this.initialized = true;
+    }
+
+    private static JsonElement toJson(List<Map<String, String>> mapList) {
+      JsonArray array = new JsonArray();
+      mapList.forEach(map -> {
+        JsonElement element = SonarLintLanguageServerTest.toJson(map);
+        array.add(element);
+      });
+      return array;
+    }
+
+    void analyze() {
+      if (!initialized) {
+        throw new IllegalStateException("Must call .initialize() before .analyze()");
+      }
+
       errors.clear();
 
-      URI uri = temporaryFolder.newFile().toPath().toUri();
+      URI uri;
+      try {
+        uri = temporaryFolder.newFile().toPath().toUri();
+      } catch (IOException e) {
+        throw new IllegalStateException(e);
+      }
       TextDocumentItem doc = new TextDocumentItem(uri.toString(), "xoo", 1, "dummy content");
       DidOpenTextDocumentParams params = new DidOpenTextDocumentParams(doc);
       languageServer.didOpen(params);
@@ -495,22 +565,31 @@ public class SonarLintLanguageServerTest {
       success = errors.isEmpty();
     }
 
-    public boolean lastWasSuccess() {
+    boolean lastWasSuccess() {
       return success;
     }
 
-    public List<Error> lastErrors() {
+    List<Error> lastErrors() {
       return errors;
     }
 
-    @CheckForNull
-    public StandaloneSonarLintEngine usedStandaloneEngine() {
-      return fakeEngineCache.usedStandaloneEngine;
+    public void setInitialServers(String... serverIds) {
+      List<Map<String, String>> servers = Stream.of(serverIds)
+        .map(serverId -> ImmutableMap.<String, String>builder()
+          .put("serverId", serverId)
+          .put("serverUrl", "foo")
+          .put("token", "bar")
+          .build())
+        .collect(Collectors.toList());
+      this.servers.addAll(servers);
     }
 
-    @CheckForNull
-    public ConnectedSonarLintEngine usedConnectedEngine() {
-      return fakeEngineCache.usedConnectedEngine;
+    public void setInitialBinding(String serverId, String projectKey) {
+      // TODO
+    }
+
+    public EngineWrapper lastEngine() {
+      return fakeEngineCache.lastEngine();
     }
   }
 

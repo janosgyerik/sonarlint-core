@@ -128,7 +128,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   static final String TYPESCRIPT_LOCATION = "typeScriptLocation";
   static final String TEST_FILE_PATTERN = "testFilePattern";
   private static final String ANALYZER_PROPERTIES = "analyzerProperties";
-  private static final String CONNECTED_MODE_SERVERS_PROP = "connectedModeServers";
+  static final String CONNECTED_MODE_SERVERS_PROP = "connectedModeServers";
   private static final String CONNECTED_MODE_PROJECT_PROP = "connectedModeProject";
   private static final String TYPESCRIPT_PATH_PROP = "sonar.typescript.internal.typescriptLocation";
 
