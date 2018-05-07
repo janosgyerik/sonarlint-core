@@ -46,6 +46,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -103,22 +106,19 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.sonar.api.internal.apachecommons.lang.StringUtils;
-import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration.Builder;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class SonarLintLanguageServer implements LanguageServer, WorkspaceService, TextDocumentService {
 
@@ -130,6 +130,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
   private static final String ANALYZER_PROPERTIES = "analyzerProperties";
   private static final String CONNECTED_MODE_SERVERS_PROP = "connectedModeServers";
   private static final String CONNECTED_MODE_PROJECT_PROP = "connectedModeProject";
+  private static final String TYPESCRIPT_PATH_PROP = "sonar.typescript.internal.typescriptLocation";
 
   private static final String SONARLINT_CONFIGURATION_NAMESPACE = "sonarlint";
   private static final String SONARLINT_SOURCE = SONARLINT_CONFIGURATION_NAMESPACE;
@@ -147,24 +148,17 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   private final Map<URI, String> languageIdPerFileURI = new HashMap<>();
   private final SonarLintTelemetry telemetry = new SonarLintTelemetry();
-  private final Collection<URL> analyzers;
-  private EngineCache engineCache = new EngineCache();
-  @VisibleForTesting
-  final Map<String, ServerInfo> serverInfoCache = new HashMap<>();
 
   private UserSettings userSettings = new UserSettings();
-
-  private StandaloneSonarLintEngine standaloneEngine;
-
-  @VisibleForTesting
-  ServerProjectBinding binding;
-
-  private String typeScriptLocation;
-
   private final List<String> workspaceFolders = new ArrayList<>();
 
-  SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream, Collection<URL> analyzers) {
-    this.analyzers = analyzers;
+  private final EngineCache engineCache;
+  private final ServerInfoCache serverInfoCache;
+
+  private ServerProjectBinding binding;
+
+  SonarLintLanguageServer(InputStream inputStream, OutputStream outputStream,
+                          BiFunction<LanguageClientLogOutput, Logger, EngineCache> engineCacheFactory) {
     Launcher<SonarLintLanguageClient> launcher = Launcher.createLauncher(this,
       SonarLintLanguageClient.class,
       inputStream,
@@ -175,11 +169,20 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     this.logOutput = new LanguageClientLogOutput(client);
 
     backgroundProcess = launcher.startListening();
+
+    Logger logger = new Logger();
+    this.engineCache = engineCacheFactory.apply(logOutput, logger);
+    this.serverInfoCache = new ServerInfoCache(logger);
   }
 
   static SonarLintLanguageServer bySocket(int port, Collection<URL> analyzers) throws IOException {
     Socket socket = new Socket("localhost", port);
-    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), analyzers);
+    BiFunction<LanguageClientLogOutput, Logger, EngineCache> factory = (logOutput, logger) -> {
+      StandaloneEngineFactory standaloneEngineFactory = new StandaloneEngineFactory(analyzers, logOutput, logger);
+      ConnectedEngineFactory connectedEngineFactory = new ConnectedEngineFactory(logOutput, logger);
+      return new DefaultEngineCache(standaloneEngineFactory, connectedEngineFactory);
+    };
+    return new SonarLintLanguageServer(socket.getInputStream(), socket.getOutputStream(), factory);
   }
 
   private class UserSettings {
@@ -248,11 +251,13 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     telemetry.init(getStoragePath(productKey, telemetryStorage), productName, productVersion);
     telemetry.optOut(userSettings.disableTelemetry);
 
-    typeScriptLocation = (String) options.get(TYPESCRIPT_LOCATION);
+    String typeScriptPath = (String) options.get(TYPESCRIPT_LOCATION);
+    engineCache.putExtraProperty(TYPESCRIPT_PATH_PROP, typeScriptPath);
 
-    startStandaloneEngine();
+    // start standalone engine
+    engineCache.getOrCreateStandaloneEngine();
 
-    initServerInfoCache(options.get(CONNECTED_MODE_SERVERS_PROP));
+    serverInfoCache.update(options.get(CONNECTED_MODE_SERVERS_PROP));
     updateBinding((Map<?, ?>) options.get(CONNECTED_MODE_PROJECT_PROP));
 
     InitializeResult result = new InitializeResult();
@@ -284,46 +289,34 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return textDocumentSyncOptions;
   }
 
-  private void initServerInfoCache(@Nullable Object connectedModeServers) {
-    if (connectedModeServers == null) {
-      return;
-    }
-
-    List<Map<String, String>> maps = (List<Map<String, String>>) connectedModeServers;
-
-    maps.forEach(m -> {
-      String serverId = m.get("serverId");
-      String url = m.get("serverUrl");
-      String token = m.get("token");
-      String organization = m.get("organizationKey");
-      if (!isBlank(serverId) && !isBlank(url) && !isBlank(token)) {
-        serverInfoCache.put(serverId, new ServerInfo(serverId, url, token, organization));
-      } else {
-        warn("Some required parameters are missing or blank: serverId, serverUrl, token");
-      }
-    });
-  }
-
-  private static boolean isBlank(@Nullable String s) {
-    return s == null || s.isEmpty();
-  }
 
   private void handleUpdateServerStorageCommand(@Nullable List<Object> arguments) {
-    engineCache.clear();
-    serverInfoCache.clear();
+    engineCache.clearConnectedEngines();
 
-    initServerInfoCache(arguments);
+    serverInfoCache.update(arguments);
 
     serverInfoCache.forEach((serverId, serverInfo) -> {
-      ConnectedSonarLintEngine engine = engineCache.getOrCreate(serverInfo);
+      ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
       if (engine == null) {
         popupError("Could not start server: " + serverId);
       } else {
         debug("Updating global storage of server " + serverId + ", may take some time...");
-        engine.update(engineCache.getServerConfig(serverId), null);
+
+        ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
+        engine.update(serverConfig, null);
+
         debug("Successfully updated global storage of server " + serverId);
       }
     });
+  }
+
+  private ServerConfiguration getServerConfiguration(ServerInfo serverInfo) {
+    return ServerConfiguration.builder()
+            .url(serverInfo.serverUrl)
+            .token(serverInfo.token)
+            .organizationKey(serverInfo.organizationKey)
+            .userAgent(USER_AGENT)
+            .build();
   }
 
   private void updateBinding(@Nullable Map<?, ?> connectedModeProject) {
@@ -348,39 +341,18 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       return;
     }
 
-    ConnectedSonarLintEngine engine = engineCache.getOrCreate(serverInfo);
+    ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
     if (engine == null) {
       popupError("Could not find server: " + serverId + "; update server storage and then bind again");
       return;
     }
 
-    ServerConfiguration serverConfig = engineCache.getServerConfig(serverId);
+    ServerConfiguration serverConfig = getServerConfiguration(serverInfo);
     try {
       engine.updateModule(serverConfig, projectKey, null);
     } catch (Exception e) {
       popupError(e.getMessage());
     }
-  }
-
-  private void startStandaloneEngine() {
-    info("Starting standalone SonarLint engine...");
-    info("Using " + analyzers.size() + " analyzers");
-
-    try {
-      Map<String, String> extraProperties = new HashMap<>();
-      extraProperties.put("sonar.typescript.internal.typescriptLocation", typeScriptLocation);
-      Builder builder = StandaloneGlobalConfiguration.builder()
-        .setLogOutput(logOutput)
-        .setExtraProperties(extraProperties)
-        .addPlugins(analyzers.toArray(new URL[0]));
-
-      this.standaloneEngine = new StandaloneSonarLintEngineImpl(builder.build());
-    } catch (Exception e) {
-      error("Error starting standalone SonarLint engine", e);
-      throw new IllegalStateException(e);
-    }
-
-    info("Standalone SonarLint engine started");
   }
 
   @VisibleForTesting
@@ -414,8 +386,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
   @Override
   public CompletableFuture<Object> shutdown() {
-    standaloneEngine.stop();
-    engineCache.clear();
+    engineCache.getOrCreateStandaloneEngine().stop();
+    engineCache.clearConnectedEngines();
     telemetry.stop();
     return CompletableFuture.completedFuture("Stopped");
   }
@@ -590,7 +562,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     if (binding != null) {
       ServerInfo serverInfo = serverInfoCache.get(binding.serverId);
       if (serverInfo != null) {
-        ConnectedSonarLintEngine engine = engineCache.getOrCreate(serverInfo);
+        ConnectedSonarLintEngine engine = engineCache.getOrCreateConnectedEngine(serverInfo);
         if (engine != null) {
           return new ConnectedAnalysisWrapper(engine, binding.projectKey);
         }
@@ -624,7 +596,8 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
       debug("Analysis triggered on " + uri + " with configuration: \n" + configuration.toString());
 
       long start = System.currentTimeMillis();
-      AnalysisResults analysisResults = standaloneEngine.analyze(configuration, issueListener, logOutput, null);
+      StandaloneSonarLintEngine engine = engineCache.getOrCreateStandaloneEngine();
+      AnalysisResults analysisResults = engine.analyze(configuration, issueListener, logOutput, null);
       int analysisTime = (int) (System.currentTimeMillis() - start);
 
       return new AnalysisResultsWrapper(analysisResults, analysisTime);
@@ -744,7 +717,7 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
           warn("Expecting 1 argument");
         } else {
           String ruleKey = parseToString(args.get(0));
-          RuleDetails ruleDetails = standaloneEngine.getRuleDetails(ruleKey);
+          RuleDetails ruleDetails = engineCache.getOrCreateStandaloneEngine().getRuleDetails(ruleKey);
           String ruleName = ruleDetails.getName();
           String htmlDescription = ruleDetails.getHtmlDescription();
           String type = ruleDetails.getType();
@@ -807,11 +780,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     return ((JsonPrimitive) obj).getAsString();
   }
 
-  @VisibleForTesting
-  void setEngineCache(EngineCache engineCache) {
-    this.engineCache = engineCache;
-  }
-
   static class ServerProjectBinding {
     final String serverId;
     final String projectKey;
@@ -819,85 +787,6 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
     ServerProjectBinding(String serverId, String projectKey) {
       this.serverId = serverId;
       this.projectKey = projectKey;
-    }
-  }
-
-  @VisibleForTesting
-  static class ServerInfo {
-    private final String serverId;
-    private final String url;
-    private final String token;
-    @Nullable
-    private final String organization;
-
-    ServerInfo(String serverId, String url, String token, @Nullable String organization) {
-      this.serverId = serverId;
-      this.url = url;
-      this.token = token;
-      this.organization = organization;
-    }
-  }
-
-  @VisibleForTesting
-  class EngineCache {
-
-    final Map<String, ConnectedSonarLintEngine> cache = new HashMap<>();
-    final Map<String, ServerConfiguration> serverConfigCache = new HashMap<>();
-
-    @CheckForNull
-    ConnectedSonarLintEngine getOrCreate(ServerInfo serverInfo) {
-      ConnectedSonarLintEngine engine = cache.get(serverInfo.serverId);
-      if (engine == null) {
-        engine = startNewEngine(serverInfo);
-        if (engine != null) {
-          cache.put(serverInfo.serverId, engine);
-        }
-      }
-      return cache.get(serverInfo.serverId);
-    }
-
-    @CheckForNull
-    private ConnectedSonarLintEngine startNewEngine(ServerInfo serverInfo) {
-      String serverId = serverInfo.serverId;
-      info("Starting connected SonarLint engine for " + serverId + "...");
-
-      try {
-        Map<String, String> extraProperties = new HashMap<>();
-        extraProperties.put("sonar.typescript.internal.typescriptLocation", typeScriptLocation);
-        ConnectedGlobalConfiguration configuration = ConnectedGlobalConfiguration.builder()
-          .setLogOutput(logOutput)
-          .setServerId(serverId)
-          .setExtraProperties(extraProperties)
-          .build();
-
-        ConnectedSonarLintEngineImpl engine = new ConnectedSonarLintEngineImpl(configuration);
-
-        // needed only to update server
-        ServerConfiguration serverConfig = ServerConfiguration.builder()
-          .url(serverInfo.url)
-          .token(serverInfo.token)
-          .organizationKey(serverInfo.organization)
-          .userAgent(USER_AGENT)
-          .build();
-        serverConfigCache.put(serverId, serverConfig);
-
-        info("Connected SonarLint engine started for " + serverId);
-
-        return engine;
-      } catch (Exception e) {
-        error("Error starting connected SonarLint engine for " + serverId, e);
-      }
-      return null;
-    }
-
-    void clear() {
-      cache.values().forEach(engine -> engine.stop(false));
-      cache.clear();
-      serverConfigCache.clear();
-    }
-
-    ServerConfiguration getServerConfig(String serverId) {
-      return serverConfigCache.get(serverId);
     }
   }
 }
