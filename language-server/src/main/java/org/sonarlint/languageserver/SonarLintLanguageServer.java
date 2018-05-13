@@ -679,7 +679,72 @@ public class SonarLintLanguageServer implements LanguageServer, WorkspaceService
 
       engine.downloadServerIssues(getServerConfiguration(serverInfo), projectKey);
       Collection<Trackable> trackables = matchAndTrack(engine, projectKey, baseDir, collector.issues);
-      trackables.forEach(trackable -> issueListener.handle(trackable.getIssue()));
+      trackables.forEach(trackable -> {
+        Issue issue = new Issue() {
+          @Override
+          public String getSeverity() {
+            return trackable.getSeverity();
+          }
+
+          @CheckForNull
+          @Override
+          public String getType() {
+            return trackable.getType();
+          }
+
+          @CheckForNull
+          @Override
+          public String getMessage() {
+            return trackable.getMessage();
+          }
+
+          @Override
+          public String getRuleKey() {
+            return trackable.getRuleKey();
+          }
+
+          @Override
+          public String getRuleName() {
+            return trackable.getRuleName();
+          }
+
+          @CheckForNull
+          @Override
+          public Integer getStartLine() {
+            return trackable.getIssue().getStartLine();
+          }
+
+          @CheckForNull
+          @Override
+          public Integer getStartLineOffset() {
+            return trackable.getIssue().getStartLineOffset();
+          }
+
+          @CheckForNull
+          @Override
+          public Integer getEndLine() {
+            return trackable.getIssue().getEndLine();
+          }
+
+          @CheckForNull
+          @Override
+          public Integer getEndLineOffset() {
+            return trackable.getIssue().getEndLineOffset();
+          }
+
+          @Override
+          public List<Flow> flows() {
+            return trackable.getIssue().flows();
+          }
+
+          @CheckForNull
+          @Override
+          public ClientInputFile getInputFile() {
+            return trackable.getIssue().getInputFile();
+          }
+        };
+        issueListener.handle(issue);
+      });
 
       int analysisTime = (int) (System.currentTimeMillis() - start);
 
